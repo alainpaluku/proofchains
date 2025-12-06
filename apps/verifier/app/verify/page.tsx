@@ -1,19 +1,19 @@
 /**
  * PROOFCHAIN Verifier - Verification Page
  * Real NFT verification using Blockfrost API
+ * Uses query params: /verify?assetId=xxx
  */
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React, { useEffect, useState, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
     CheckCircle2,
     XCircle,
     ArrowLeft,
     ExternalLink,
     Download,
-    Shield,
     Calendar,
     Building2,
     GraduationCap,
@@ -21,12 +21,11 @@ import {
 } from 'lucide-react';
 import { verifyNFT, type VerificationResult, getIPFSGatewayUrl } from '@proofchain/chain';
 import { IPFSImage } from '@proofchain/ui';
-import Link from 'next/link';
 
-export default function VerifyPage() {
-    const params = useParams();
+function VerifyContent() {
+    const searchParams = useSearchParams();
     const router = useRouter();
-    const assetId = params.assetId as string;
+    const assetId = searchParams.get('assetId') || searchParams.get('id') || '';
 
     const [verification, setVerification] = useState<VerificationResult | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -34,6 +33,8 @@ export default function VerifyPage() {
     useEffect(() => {
         if (assetId) {
             performVerification();
+        } else {
+            setIsLoading(false);
         }
     }, [assetId]);
 
@@ -54,6 +55,28 @@ export default function VerifyPage() {
     }
 
     const explorerUrl = process.env.NEXT_PUBLIC_CARDANO_EXPLORER || 'https://preprod.cardanoscan.io';
+
+    if (!assetId) {
+        return (
+            <div className="min-h-full flex items-center justify-center">
+                <div className="text-center">
+                    <XCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h2 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">
+                        Aucun diplôme spécifié
+                    </h2>
+                    <p className="text-gray-500 dark:text-gray-400 mb-4">
+                        Veuillez scanner un QR code ou entrer un ID de diplôme
+                    </p>
+                    <button
+                        onClick={() => router.push('/')}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                    >
+                        Retour à l'accueil
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-full">
@@ -90,7 +113,6 @@ export default function VerifyPage() {
 
                         {/* Diploma Details */}
                         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
-                            {/* Header with gradient */}
                             <div className="h-40 bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-600 relative">
                                 <div className="absolute inset-0 bg-black/10" />
                                 <div className="absolute bottom-4 left-6">
@@ -100,9 +122,7 @@ export default function VerifyPage() {
                                 </div>
                             </div>
 
-                            {/* Content */}
                             <div className="p-8 space-y-6">
-                                {/* Document Image */}
                                 {verification.metadata.image && (
                                     <div className="mb-6">
                                         <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
@@ -119,7 +139,6 @@ export default function VerifyPage() {
                                     </div>
                                 )}
 
-                                {/* Student ID */}
                                 <div>
                                     <p className="text-sm text-gray-500 dark:text-gray-400">ID Étudiant</p>
                                     <p className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -127,7 +146,6 @@ export default function VerifyPage() {
                                     </p>
                                 </div>
 
-                                {/* Degree Information */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="flex items-start gap-3">
                                         <GraduationCap className="w-6 h-6 text-purple-600 mt-1" />
@@ -170,23 +188,26 @@ export default function VerifyPage() {
                                     </div>
                                 </div>
 
-                                {/* Honors/Grade */}
+                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                 {((verification.metadata.attributes as any).honors || (verification.metadata.attributes as any).grade) && (
                                     <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+                                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                         {(verification.metadata.attributes as any).honors && (
                                             <div className="inline-block px-4 py-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded-lg font-medium">
+                                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                                 🏆 {(verification.metadata.attributes as any).honors}
                                             </div>
                                         )}
+                                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                         {(verification.metadata.attributes as any).grade && (
                                             <p className="mt-3 text-gray-700 dark:text-gray-300">
+                                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                                 Note: <span className="font-bold">{(verification.metadata.attributes as any).grade}</span>
                                             </p>
                                         )}
                                     </div>
                                 )}
 
-                                {/* Document Download */}
                                 {verification.metadata.attributes.documentHash && (
                                     <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
                                         <a
@@ -268,5 +289,18 @@ export default function VerifyPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function VerifyPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex flex-col items-center justify-center py-20">
+                <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mb-4" />
+                <p className="text-lg text-gray-600 dark:text-gray-400">Chargement...</p>
+            </div>
+        }>
+            <VerifyContent />
+        </Suspense>
     );
 }

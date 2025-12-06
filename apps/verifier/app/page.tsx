@@ -41,7 +41,7 @@ export default function HomePage() {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            router.push(`/verify/${searchQuery.trim()}`);
+            router.push(`/verify?assetId=${encodeURIComponent(searchQuery.trim())}`);
         }
     };
 
@@ -195,7 +195,7 @@ export default function HomePage() {
                                                 metadata={verification.metadata}
                                                 txHash={verification.txHash}
                                                 verified={verification.valid}
-                                                onClick={() => router.push(`/verify/${verification.policyId}${verification.assetName}`)}
+                                                onClick={() => router.push(`/verify?assetId=${encodeURIComponent(verification.policyId + (verification.assetName || ''))}`)}
                                             />
                                         </div>
                                     )

@@ -10,10 +10,11 @@ const nextConfig = {
     transpilePackages: ['@proofchain/ui', '@proofchain/chain', '@proofchain/shared'],
     images: {
         domains: ['gateway.pinata.cloud', 'ipfs.io'],
-        unoptimized: true, // Required for Cloudflare Pages
+        unoptimized: true, // Required for static export
     },
-    // Cloudflare Pages compatibility
-    output: 'standalone',
+    // Static export for Cloudflare Pages
+    output: 'export',
+    trailingSlash: true,
     webpack: (config, { isServer }) => {
         config.externals.push('pino-pretty', 'lokijs', 'encoding');
 
