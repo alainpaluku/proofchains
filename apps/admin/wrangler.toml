@@ -1,8 +1,0 @@
-# Cloudflare Pages configuration for Admin App
-name = "proofchain-admin"
-compatibility_date = "2024-12-01"
-compatibility_flags = ["nodejs_compat"]
-
-[vars]
-NEXT_PUBLIC_APP_NAME = "ProofChain Admin"
-NODE_VERSION = "20"

@@ -1,13 +1,12 @@
 /**
  * PROOFCHAIN Verifier - Verification Page
  * Real NFT verification using Blockfrost API
- * Uses query params: /verify?assetId=xxx
  */
 
 'use client';
 
-import React, { useEffect, useState, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import {
     CheckCircle2,
     XCircle,
@@ -22,10 +21,10 @@ import {
 import { verifyNFT, type VerificationResult, getIPFSGatewayUrl } from '@proofchain/chain';
 import { IPFSImage } from '@proofchain/ui';
 
-function VerifyContent() {
-    const searchParams = useSearchParams();
+export default function VerifyPage() {
+    const params = useParams();
     const router = useRouter();
-    const assetId = searchParams.get('assetId') || searchParams.get('id') || '';
+    const assetId = params.assetId as string;
 
     const [verification, setVerification] = useState<VerificationResult | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -33,9 +32,8 @@ function VerifyContent() {
     useEffect(() => {
         if (assetId) {
             performVerification();
-        } else {
-            setIsLoading(false);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [assetId]);
 
     async function performVerification() {
@@ -55,28 +53,6 @@ function VerifyContent() {
     }
 
     const explorerUrl = process.env.NEXT_PUBLIC_CARDANO_EXPLORER || 'https://preprod.cardanoscan.io';
-
-    if (!assetId) {
-        return (
-            <div className="min-h-full flex items-center justify-center">
-                <div className="text-center">
-                    <XCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <h2 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">
-                        Aucun diplôme spécifié
-                    </h2>
-                    <p className="text-gray-500 dark:text-gray-400 mb-4">
-                        Veuillez scanner un QR code ou entrer un ID de diplôme
-                    </p>
-                    <button
-                        onClick={() => router.push('/')}
-                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                    >
-                        Retour à l'accueil
-                    </button>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="min-h-full">
@@ -180,7 +156,7 @@ function VerifyContent() {
                                     <div className="flex items-start gap-3">
                                         <Calendar className="w-6 h-6 text-green-600 mt-1" />
                                         <div>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400">Date d'obtention</p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">Date d&apos;obtention</p>
                                             <p className="text-lg font-semibold text-gray-900 dark:text-white">
                                                 {new Date(verification.metadata.attributes.graduationDate).toLocaleDateString('fr-FR')}
                                             </p>
@@ -262,7 +238,7 @@ function VerifyContent() {
 
                                 {verification.mintedAt && (
                                     <div>
-                                        <p className="text-gray-500 dark:text-gray-400">Date d'émission</p>
+                                        <p className="text-gray-500 dark:text-gray-400">Date d&apos;émission</p>
                                         <p className="text-gray-900 dark:text-white">
                                             {new Date(verification.mintedAt).toLocaleString('fr-FR')}
                                         </p>
@@ -289,18 +265,5 @@ function VerifyContent() {
                 )}
             </div>
         </div>
-    );
-}
-
-export default function VerifyPage() {
-    return (
-        <Suspense fallback={
-            <div className="flex flex-col items-center justify-center py-20">
-                <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mb-4" />
-                <p className="text-lg text-gray-600 dark:text-gray-400">Chargement...</p>
-            </div>
-        }>
-            <VerifyContent />
-        </Suspense>
     );
 }

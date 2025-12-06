@@ -1,9 +1,0 @@
-# Cloudflare Pages configuration for Verifier App
-name = "proofchain-verifier"
-compatibility_date = "2024-12-01"
-compatibility_flags = ["nodejs_compat"]
-
-[vars]
-NEXT_PUBLIC_APP_NAME = "ProofChain Verifier"
-NEXT_PUBLIC_BLOCKFROST_NETWORK = "preprod"
-NODE_VERSION = "20"

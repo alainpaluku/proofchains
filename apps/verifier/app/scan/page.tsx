@@ -13,7 +13,7 @@ export default function ScanPage() {
     const handleManualSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (manualInput.trim()) {
-            router.push(`/verify?assetId=${encodeURIComponent(manualInput.trim())}`);
+            router.push(`/verify/${encodeURIComponent(manualInput.trim())}`);
         }
     };
 

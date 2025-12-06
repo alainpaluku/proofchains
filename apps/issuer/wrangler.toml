@@ -1,9 +1,0 @@
-# Cloudflare Pages configuration for Issuer App
-name = "proofchain-issuer"
-compatibility_date = "2024-12-01"
-compatibility_flags = ["nodejs_compat"]
-
-[vars]
-NEXT_PUBLIC_APP_NAME = "ProofChain Issuer"
-NEXT_PUBLIC_BLOCKFROST_NETWORK = "preprod"
-NODE_VERSION = "20"
