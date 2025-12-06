@@ -7,7 +7,13 @@ const withPWA = require('next-pwa')({
 });
 
 const nextConfig = {
-    transpilePackages: ['@proofchain/ui', '@proofchain/chain'],
+    transpilePackages: ['@proofchain/ui', '@proofchain/chain', '@proofchain/shared'],
+    images: {
+        domains: ['gateway.pinata.cloud', 'ipfs.io'],
+        unoptimized: true, // Required for Cloudflare Pages
+    },
+    // Cloudflare Pages compatibility
+    output: 'standalone',
     webpack: (config, { isServer }) => {
         config.externals.push('pino-pretty', 'lokijs', 'encoding');
 

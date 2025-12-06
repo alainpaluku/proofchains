@@ -1,8 +1,12 @@
 # Cloudflare Pages configuration for Issuer App
 name = "proofchain-issuer"
-compatibility_date = "2024-01-01"
-pages_build_output_dir = ".next"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Pour Next.js avec @cloudflare/next-on-pages
+pages_build_output_dir = ".vercel/output/static"
 
 [vars]
 NEXT_PUBLIC_APP_NAME = "ProofChain Issuer"
 NEXT_PUBLIC_BLOCKFROST_NETWORK = "preprod"
+NODE_VERSION = "18"
