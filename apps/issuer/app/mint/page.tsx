@@ -10,12 +10,6 @@ import {
     ExternalLink,
     Users
 } from 'lucide-react';
-import {
-    mintDiplomaNFT,
-    uploadToIPFS,
-    type DiplomaMetadata,
-    type MintingResult
-} from '@proofchain/chain';
 import { useWallet, ConnectWalletButton } from '@proofchain/ui';
 import { 
     documentService, 
@@ -23,6 +17,32 @@ import {
     issuerService,
     type Student 
 } from '@proofchain/shared';
+
+// Types for chain functions
+interface DiplomaMetadata {
+    name: string;
+    image: string;
+    mediaType: string;
+    description: string;
+    attributes: Record<string, string>;
+    version: string;
+    standard: string;
+}
+
+interface MintingResult {
+    success: boolean;
+    txHash?: string;
+    assetId?: string;
+    policyId?: string;
+    error?: string;
+}
+
+interface IPFSResult {
+    success: boolean;
+    ipfsHash?: string;
+    url?: string;
+    error?: string;
+}
 
 export default function MintPage() {
     const { walletApi, connected } = useWallet();
@@ -134,8 +154,11 @@ export default function MintPage() {
         setIsUploading(true);
 
         try {
+            // Dynamic import of chain functions
+            const { mintDiplomaNFT, uploadToIPFS } = await import('@proofchain/chain');
+
             console.log('📤 Upload image sur IPFS...');
-            const imageUpload = await uploadToIPFS(imageFile);
+            const imageUpload: IPFSResult = await uploadToIPFS(imageFile);
             if (!imageUpload.success || !imageUpload.ipfsHash) {
                 throw new Error(imageUpload.error || 'Échec upload IPFS');
             }
@@ -181,7 +204,7 @@ export default function MintPage() {
             console.log('⛏️ Minting NFT sur Cardano...');
             const assetName = `PCD${document.document_code}`;
 
-            const result = await mintDiplomaNFT(walletApi, { metadata, assetName });
+            const result: MintingResult = await mintDiplomaNFT(walletApi, { metadata, assetName });
 
             if (result.success && result.txHash && result.assetId) {
                 console.log('✅ Mise à jour document dans Supabase...');
@@ -297,7 +320,7 @@ export default function MintPage() {
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                             <Users className="w-6 h-6 text-purple-600" />
-                            Nom de l'étudiant
+                            Nom de l&apos;étudiant
                         </h2>
 
                         {loadingStudents ? (
@@ -379,7 +402,7 @@ export default function MintPage() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Domaine d'études *
+                                    Domaine d&apos;études *
                                 </label>
                                 <input
                                     type="text"
