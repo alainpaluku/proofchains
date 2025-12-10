@@ -18,31 +18,21 @@ import {
     type Student 
 } from '@proofchain/shared';
 
-// Types for chain functions
-interface DiplomaMetadata {
-    name: string;
-    image: string;
-    mediaType: string;
-    description: string;
-    attributes: Record<string, string>;
-    version: string;
-    standard: string;
-}
-
-interface MintingResult {
+// Types imported dynamically
+type MintingResult = {
     success: boolean;
     txHash?: string;
     assetId?: string;
     policyId?: string;
     error?: string;
-}
+};
 
-interface IPFSResult {
+type IPFSResult = {
     success: boolean;
     ipfsHash?: string;
     url?: string;
     error?: string;
-}
+};
 
 export default function MintPage() {
     const { walletApi, connected } = useWallet();
@@ -186,7 +176,7 @@ export default function MintPage() {
 
             const verifyUrl = `${process.env.NEXT_PUBLIC_VERIFIER_URL || 'https://proofchain.io'}/verify/${document.document_id}`;
             
-            const metadata: DiplomaMetadata = {
+            const metadata = {
                 name: `PROOFCHAIN Diploma - ${document.document_id}`,
                 image: imageUpload.url!,
                 mediaType: imageFile.type === 'image/png' ? 'image/png' : 'image/jpeg',
@@ -198,7 +188,7 @@ export default function MintPage() {
                     verifyUrl: verifyUrl,
                 },
                 version: '2.0',
-                standard: 'CIP-25',
+                standard: 'CIP-25' as const,
             };
 
             console.log('⛏️ Minting NFT sur Cardano...');
