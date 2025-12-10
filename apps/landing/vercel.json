@@ -1,5 +1,0 @@
-{
-    "framework": "nextjs",
-    "installCommand": "cd ../.. && npm install",
-    "buildCommand": "cd ../.. && npx turbo run build --filter=@proofchain/landing"
-}

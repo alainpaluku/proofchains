@@ -6,7 +6,8 @@
     "dev": "next dev -p 3003",
     "build": "next build",
     "start": "next start -p 3003",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "vercel-build": "next build"
   },
   "dependencies": {
     "lucide-react": "0.294.0",
