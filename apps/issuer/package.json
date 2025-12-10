@@ -1,37 +1,35 @@
 {
-    "name": "@proofchain/issuer",
-    "version": "1.0.0",
-    "private": true,
-    "scripts": {
-        "dev": "next dev -p 3001",
-        "build": "next build",
-        "start": "next start -p 3001",
-        "lint": "eslint ."
-    },
-    "dependencies": {
-        "@proofchain/chain": "*",
-        "@proofchain/shared": "*",
-        "@proofchain/ui": "*",
-        "@types/form-data": "^2.2.1",
-        "axios": "^1.7.9",
-        "form-data": "^4.0.5",
-        "lucide-react": "^0.468.0",
-        "next": "^15.3.3",
-        "papaparse": "^5.4.1",
-        "react": "^18.3.1",
-        "react-dom": "^18.3.1"
-    },
-    "devDependencies": {
-        "@eslint/eslintrc": "^3.3.3",
-        "@types/node": "^22.10.1",
-        "@types/papaparse": "^5.3.15",
-        "@types/react": "^18.3.12",
-        "@types/react-dom": "^18.3.1",
-        "autoprefixer": "^10.4.20",
-        "eslint": "^9.17.0",
-        "eslint-config-next": "^15.1.0",
-        "postcss": "^8.4.49",
-        "tailwindcss": "^3.4.17",
-        "typescript": "^5.6.3"
-    }
+  "name": "@proofchain/issuer",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start -p 3001",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@proofchain/chain": "*",
+    "@proofchain/shared": "*",
+    "@proofchain/ui": "*",
+    "axios": "1.6.2",
+    "form-data": "4.0.0",
+    "lucide-react": "0.294.0",
+    "next": "13.5.6",
+    "papaparse": "5.4.1",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "20.10.0",
+    "@types/papaparse": "5.3.14",
+    "@types/react": "18.2.39",
+    "@types/react-dom": "18.2.17",
+    "autoprefixer": "10.4.16",
+    "eslint": "8.54.0",
+    "eslint-config-next": "13.5.6",
+    "postcss": "8.4.31",
+    "tailwindcss": "3.3.5",
+    "typescript": "5.3.2"
+  }
 }

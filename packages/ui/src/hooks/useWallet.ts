@@ -7,18 +7,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-// Extend Window interface for Cardano wallets
-declare global {
-    interface Window {
-        cardano?: {
-            lace?: {
-                enable: () => Promise<WalletApi>;
-            };
-            nami?: {
-                enable: () => Promise<WalletApi>;
-            };
-        };
-    }
+interface CardanoWallet {
+    enable: () => Promise<WalletApi>;
+}
+
+interface CardanoWindow {
+    lace?: CardanoWallet;
+    nami?: CardanoWallet;
 }
 
 interface WalletApi {
@@ -50,15 +45,23 @@ export function useWallet() {
         error: null,
     });
 
+    // Get cardano object from window
+    const getCardano = useCallback((): CardanoWindow | undefined => {
+        if (typeof window !== 'undefined') {
+            return (window as unknown as { cardano?: CardanoWindow }).cardano;
+        }
+        return undefined;
+    }, []);
+
     // Check if Lace is installed
     const isLaceInstalled = useCallback(() => {
-        return typeof window !== 'undefined' && window.cardano?.lace;
-    }, []);
+        return !!getCardano()?.lace;
+    }, [getCardano]);
 
     // Check if Nami is installed
     const isNamiInstalled = useCallback(() => {
-        return typeof window !== 'undefined' && window.cardano?.nami;
-    }, []);
+        return !!getCardano()?.nami;
+    }, [getCardano]);
 
     // Connect to wallet (Lace preferred, then Nami)
     const connect = useCallback(async () => {
@@ -77,12 +80,13 @@ export function useWallet() {
 
         try {
             let walletApi;
+            const cardano = getCardano();
 
             // Prefer Lace if available
-            if (laceAvailable && window.cardano?.lace) {
-                walletApi = await window.cardano.lace.enable();
-            } else if (namiAvailable && window.cardano?.nami) {
-                walletApi = await window.cardano.nami.enable();
+            if (laceAvailable && cardano?.lace) {
+                walletApi = await cardano.lace.enable();
+            } else if (namiAvailable && cardano?.nami) {
+                walletApi = await cardano.nami.enable();
             } else {
                 throw new Error('No wallet available');
             }

@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from 'next';
+import type { Metadata } from 'next';
 import './globals.css';
 import { AuthWrapper } from '../components/AuthWrapper';
 import { ThemeScript } from '@proofchain/ui';
@@ -7,18 +7,17 @@ export const metadata: Metadata = {
     title: 'PROOFCHAIN Admin',
     description: 'Administration platform for PROOFCHAIN',
     manifest: '/manifest.json',
+    themeColor: '#6ecaff',
+    viewport: {
+        width: 'device-width',
+        initialScale: 1,
+        maximumScale: 1,
+    },
     appleWebApp: {
         capable: true,
         statusBarStyle: 'default',
         title: 'PROOFCHAIN Admin',
     },
-};
-
-export const viewport: Viewport = {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    themeColor: '#6ecaff',
 };
 
 export default function RootLayout({

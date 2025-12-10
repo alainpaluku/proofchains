@@ -240,14 +240,14 @@ export const issuerService = {
                 .select('status')
                 .eq('institution_id', institution.id);
 
-            const issued = documents?.filter(d => d.status === 'issued').length || 0;
-            const pending = documents?.filter(d => d.status === 'draft').length || 0;
+            const issued = documents?.filter((d: { status: string }) => d.status === 'issued').length || 0;
+            const pending = documents?.filter((d: { status: string }) => d.status === 'draft').length || 0;
 
             // Récupérer le nombre de vérifications
             const { count: verificationsCount } = await supabase
                 .from('verification_logs')
                 .select('id', { count: 'exact', head: true })
-                .in('document_id', documents?.map(d => d.status === 'issued') || []);
+                .in('document_id', documents?.map((d: { status: string }) => d.status === 'issued') || []);
 
             return { 
                 success: true, 
@@ -314,10 +314,10 @@ export const issuerService = {
                 .order('created_at', { ascending: false })
                 .limit(limit);
 
-            const activities = documents?.map(doc => ({
+            const activities = documents?.map((doc: { id: string; status: string; student: { full_name: string } | null; created_at: string | null }) => ({
                 id: doc.id,
                 type: 'document_issued' as const,
-                description: `Document ${doc.status === 'issued' ? 'émis' : 'créé'} pour ${(doc.student as any)?.full_name || 'Étudiant'}`,
+                description: `Document ${doc.status === 'issued' ? 'émis' : 'créé'} pour ${doc.student?.full_name || 'Étudiant'}`,
                 createdAt: doc.created_at || new Date().toISOString(),
             })) || [];
 

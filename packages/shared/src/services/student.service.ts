@@ -225,9 +225,9 @@ export const studentService = {
 
             const stats = {
                 total: data?.length || 0,
-                active: data?.filter(s => s.status === 'active').length || 0,
-                graduated: data?.filter(s => s.status === 'graduated').length || 0,
-                suspended: data?.filter(s => s.status === 'suspended').length || 0,
+                active: data?.filter((s: { status: string }) => s.status === 'active').length || 0,
+                graduated: data?.filter((s: { status: string }) => s.status === 'graduated').length || 0,
+                suspended: data?.filter((s: { status: string }) => s.status === 'suspended').length || 0,
             };
 
             return { success: true, stats };

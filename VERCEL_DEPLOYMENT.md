@@ -2,6 +2,14 @@
 
 Ce projet est un monorepo avec 4 applications Next.js. Chaque app doit être déployée comme un **projet Vercel séparé**.
 
+## ⚠️ IMPORTANT - Configuration Root Directory
+
+Quand vous importez le repo, Vercel détecte automatiquement les sous-dossiers et propose de sélectionner `apps/admin`, `apps/issuer`, etc.
+
+**NE SÉLECTIONNEZ PAS UN SOUS-DOSSIER!**
+
+Cherchez l'option pour importer depuis la **racine du repo** (Root Directory = `.` ou vide).
+
 ## Configuration pour chaque application
 
 Créez **4 projets Vercel** en important le repo `alainpaluku/proofchain`:
@@ -10,8 +18,9 @@ Créez **4 projets Vercel** en important le repo `alainpaluku/proofchain`:
 
 | Paramètre | Valeur |
 |-----------|--------|
-| **Root Directory** | `.` (racine) |
+| **Root Directory** | `.` (racine - NE PAS sélectionner apps/landing) |
 | **Framework Preset** | Next.js |
+| **Install Command** | `npm install` |
 | **Build Command** | `npx turbo run build --filter=@proofchain/landing` |
 | **Output Directory** | `apps/landing/.next` |
 
@@ -19,8 +28,9 @@ Créez **4 projets Vercel** en important le repo `alainpaluku/proofchain`:
 
 | Paramètre | Valeur |
 |-----------|--------|
-| **Root Directory** | `.` (racine) |
+| **Root Directory** | `.` (racine - NE PAS sélectionner apps/verifier) |
 | **Framework Preset** | Next.js |
+| **Install Command** | `npm install` |
 | **Build Command** | `npx turbo run build --filter=@proofchain/verifier` |
 | **Output Directory** | `apps/verifier/.next` |
 
@@ -28,8 +38,9 @@ Créez **4 projets Vercel** en important le repo `alainpaluku/proofchain`:
 
 | Paramètre | Valeur |
 |-----------|--------|
-| **Root Directory** | `.` (racine) |
+| **Root Directory** | `.` (racine - NE PAS sélectionner apps/issuer) |
 | **Framework Preset** | Next.js |
+| **Install Command** | `npm install` |
 | **Build Command** | `npx turbo run build --filter=@proofchain/issuer` |
 | **Output Directory** | `apps/issuer/.next` |
 
@@ -37,8 +48,9 @@ Créez **4 projets Vercel** en important le repo `alainpaluku/proofchain`:
 
 | Paramètre | Valeur |
 |-----------|--------|
-| **Root Directory** | `.` (racine) |
+| **Root Directory** | `.` (racine - NE PAS sélectionner apps/admin) |
 | **Framework Preset** | Next.js |
+| **Install Command** | `npm install` |
 | **Build Command** | `npx turbo run build --filter=@proofchain/admin` |
 | **Output Directory** | `apps/admin/.next` |
 
@@ -56,11 +68,21 @@ NEXT_PUBLIC_SUPABASE_URL=votre_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=votre_anon_key
 ```
 
-## Étapes
+## Étapes détaillées
 
-1. Allez sur [vercel.com](https://vercel.com) > "Add New Project"
-2. Importez `alainpaluku/proofchain`
-3. **IMPORTANT**: Laissez Root Directory vide (`.` = racine)
-4. Modifiez Build Command et Output Directory selon le tableau
+1. Allez sur [vercel.com](https://vercel.com) → "Add New Project"
+2. Sélectionnez le repo `alainpaluku/proofchain`
+3. **ATTENTION**: Vercel va proposer plusieurs dossiers détectés
+   - **NE CLIQUEZ PAS** sur apps/admin ou autre sous-dossier
+   - Cherchez "Import" ou "Continue" pour garder la racine
+4. Dans "Configure Project":
+   - Vérifiez que Root Directory = `.` ou vide
+   - Install Command: `npm install`
+   - Build Command: selon l'app (voir tableaux ci-dessus)
+   - Output Directory: selon l'app (voir tableaux ci-dessus)
 5. Ajoutez les variables d'environnement
-6. Deploy!
+6. Cliquez "Deploy"
+
+## Vérification
+
+Si vous voyez `npm install --prefix=../..` dans les logs d'erreur, cela signifie que le Root Directory n'est PAS à la racine. Supprimez le projet et recommencez en gardant la racine.

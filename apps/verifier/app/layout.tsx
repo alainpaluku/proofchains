@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from 'next';
+import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import AppLayout from '../components/AppLayout';
@@ -11,19 +11,18 @@ export const metadata: Metadata = {
     title: 'PROOFCHAIN Verifier - Vérification de diplômes',
     description: 'Vérifiez l\'authenticité des diplômes sur la blockchain Cardano',
     manifest: '/manifest.json',
+    themeColor: '#6ecaff',
+    viewport: {
+        width: 'device-width',
+        initialScale: 1,
+        maximumScale: 1,
+        userScalable: false,
+    },
     appleWebApp: {
         capable: true,
         statusBarStyle: 'default',
         title: 'PROOFCHAIN',
     },
-};
-
-export const viewport: Viewport = {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-    themeColor: '#6ecaff',
 };
 
 export default function RootLayout({
