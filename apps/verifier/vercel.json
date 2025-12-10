@@ -1,5 +1,0 @@
-{
-    "installCommand": "npm install --prefix ../.. ",
-    "buildCommand": "npm run build --prefix ../.. --workspace=apps/verifier",
-    "framework": "nextjs"
-}
