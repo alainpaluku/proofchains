@@ -60,8 +60,8 @@ export default function KYCPage() {
             ]);
         }
         const institutionResult = await issuerService.getMyInstitution();
-        if (institutionResult.success && institutionResult.institution) {
-            const inst = institutionResult.institution;
+        if (institutionResult.success && institutionResult.data) {
+            const inst = institutionResult.data;
             setKycStatus(inst.kyc_status);
             setRejectionReason(inst.kyc_rejection_reason);
             setFormData({

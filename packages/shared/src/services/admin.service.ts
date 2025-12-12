@@ -1,12 +1,18 @@
 /**
  * PROOFCHAIN - Admin Service
- * Service pour les opérations administratives (validation KYC, etc.)
+ * Gestion des institutions et validation KYC (admin uniquement)
  */
 
-import { getSupabaseClient, isSupabaseConfigured } from '../lib/supabase';
-import type { Institution, KYCStatus } from '../types/database.types';
+import { 
+    withSupabase, 
+    countRecords, 
+    getSupabaseClient, 
+    checkSupabase, 
+    handleError,
+    isCurrentUserAdmin,
+} from './base.service';
+import type { ServiceResponse, Institution, KYCStatus } from '../types';
 
-// Types
 export interface KYCPendingRequest {
     id: string;
     institutionCode: string;
@@ -28,13 +34,7 @@ export interface KYCPendingRequest {
     };
 }
 
-interface ServiceResponse<T> {
-    success: boolean;
-    data?: T;
-    error?: string;
-}
-
-interface AdminStats {
+export interface AdminStats {
     totalInstitutions: number;
     pendingKYC: number;
     approvedKYC: number;
@@ -43,21 +43,7 @@ interface AdminStats {
     totalStudents: number;
 }
 
-// Helper functions
-const checkSupabase = (): ServiceResponse<never> | null => {
-    if (!isSupabaseConfigured()) {
-        return { success: false, error: 'Supabase non configuré' };
-    }
-    return null;
-};
-
-const handleError = (error: unknown, context: string): ServiceResponse<never> => {
-    const message = error instanceof Error ? error.message : 'Erreur inconnue';
-    console.error(`Erreur ${context}:`, error);
-    return { success: false, error: message };
-};
-
-const mapInstitutionToKYCRequest = (inst: Institution): KYCPendingRequest => ({
+const mapToKYCRequest = (inst: Institution): KYCPendingRequest => ({
     id: inst.id,
     institutionCode: inst.institution_code,
     name: inst.name,
@@ -78,14 +64,9 @@ const mapInstitutionToKYCRequest = (inst: Institution): KYCPendingRequest => ({
     },
 });
 
-// Service
 export const adminService = {
     async getPendingKYCRequests(): Promise<ServiceResponse<KYCPendingRequest[]>> {
-        const configError = checkSupabase();
-        if (configError) return configError;
-
-        try {
-            const supabase = getSupabaseClient();
+        return withSupabase(async (supabase) => {
             const { data, error } = await supabase
                 .from('institutions')
                 .select('*')
@@ -93,10 +74,8 @@ export const adminService = {
                 .order('kyc_submitted_at', { ascending: true });
 
             if (error) throw error;
-            return { success: true, data: (data || []).map(mapInstitutionToKYCRequest) };
-        } catch (error) {
-            return handleError(error, 'récupération demandes KYC');
-        }
+            return (data || []).map(mapToKYCRequest);
+        }, 'récupération demandes KYC');
     },
 
     async getAllInstitutions(filters?: { 
@@ -104,11 +83,7 @@ export const adminService = {
         countryCode?: string;
         type?: string;
     }): Promise<ServiceResponse<Institution[]>> {
-        const configError = checkSupabase();
-        if (configError) return configError;
-
-        try {
-            const supabase = getSupabaseClient();
+        return withSupabase(async (supabase) => {
             let query = supabase
                 .from('institutions')
                 .select('*')
@@ -120,10 +95,8 @@ export const adminService = {
 
             const { data, error } = await query;
             if (error) throw error;
-            return { success: true, data: data || [] };
-        } catch (error) {
-            return handleError(error, 'récupération institutions');
-        }
+            return data || [];
+        }, 'récupération institutions');
     },
 
     async updateKYCStatus(
@@ -131,44 +104,46 @@ export const adminService = {
         status: 'approved' | 'rejected', 
         reason?: string
     ): Promise<ServiceResponse<Institution>> {
-        const configError = checkSupabase();
+        const configError = checkSupabase<Institution>();
         if (configError) return configError;
 
         try {
             const supabase = getSupabaseClient();
             const { data: { user } } = await supabase.auth.getUser();
             
-            if (!user) {
-                return { success: false, error: 'Admin non connecté' };
-            }
+            if (!user) return { success: false, error: 'Admin non connecté' };
 
-            const updatePayload = {
-                kyc_status: status,
-                kyc_reviewed_at: new Date().toISOString(),
-                kyc_reviewed_by: user.id,
-                kyc_rejection_reason: status === 'rejected' ? reason : null,
-            };
+            if (!(await isCurrentUserAdmin())) {
+                return { success: false, error: 'Accès non autorisé. Seuls les admins peuvent effectuer cette action.' };
+            }
 
             const { data, error } = await supabase
                 .from('institutions')
-                .update(updatePayload)
+                .update({
+                    kyc_status: status,
+                    kyc_reviewed_at: new Date().toISOString(),
+                    kyc_reviewed_by: user.id,
+                    kyc_rejection_reason: status === 'rejected' ? reason : null,
+                })
                 .eq('id', institutionId)
                 .select()
                 .single();
 
-            if (error) throw error;
+            if (error) {
+                if (error.code === '42501' || error.message?.includes('policy')) {
+                    return { success: false, error: 'Permission refusée. Vérifiez les politiques RLS.' };
+                }
+                throw error;
+            }
 
-            // Log admin action
-            await supabase.from('admin_logs').insert({
+            // Log admin action (non-blocking)
+            supabase.from('admin_logs').insert({
                 admin_id: user.id,
                 action: `kyc_${status}`,
                 target_type: 'institution',
                 target_id: institutionId,
-                details: { 
-                    institution_name: data?.name,
-                    ...(reason && { reason })
-                },
-            });
+                details: { institution_name: data?.name, ...(reason && { reason }) },
+            }).then(() => {}).catch(() => {});
 
             return { success: true, data };
         } catch (error) {
@@ -185,53 +160,33 @@ export const adminService = {
     },
 
     async getCountries(): Promise<ServiceResponse<Array<{ code: string; name: string }>>> {
-        const configError = checkSupabase();
-        if (configError) return configError;
-
-        try {
-            const supabase = getSupabaseClient();
+        return withSupabase(async (supabase) => {
             const { data, error } = await supabase
                 .from('countries')
                 .select('code, name')
                 .order('name');
 
             if (error) throw error;
-            return { success: true, data: data || [] };
-        } catch (error) {
-            return handleError(error, 'récupération pays');
-        }
+            return data || [];
+        }, 'récupération pays');
     },
 
+    /**
+     * Récupère les statistiques admin
+     */
     async getAdminStats(): Promise<ServiceResponse<AdminStats>> {
-        const configError = checkSupabase();
-        if (configError) return configError;
-
-        try {
-            const supabase = getSupabaseClient();
-            
-            const countQuery = async (table: string, filter?: { column: string; value: string }) => {
-                let query = supabase.from(table).select('*', { count: 'exact', head: true });
-                if (filter) query = query.eq(filter.column, filter.value);
-                const { count } = await query;
-                return count || 0;
-            };
-
+        return withSupabase(async () => {
             const [totalInstitutions, pendingKYC, approvedKYC, rejectedKYC, totalDocuments, totalStudents] = 
                 await Promise.all([
-                    countQuery('institutions'),
-                    countQuery('institutions', { column: 'kyc_status', value: 'pending' }),
-                    countQuery('institutions', { column: 'kyc_status', value: 'approved' }),
-                    countQuery('institutions', { column: 'kyc_status', value: 'rejected' }),
-                    countQuery('documents'),
-                    countQuery('students'),
+                    countRecords('institutions'),
+                    countRecords('institutions', { column: 'kyc_status', value: 'pending' }),
+                    countRecords('institutions', { column: 'kyc_status', value: 'approved' }),
+                    countRecords('institutions', { column: 'kyc_status', value: 'rejected' }),
+                    countRecords('documents'),
+                    countRecords('students'),
                 ]);
 
-            return { 
-                success: true, 
-                data: { totalInstitutions, pendingKYC, approvedKYC, rejectedKYC, totalDocuments, totalStudents }
-            };
-        } catch (error) {
-            return handleError(error, 'récupération stats admin');
-        }
+            return { totalInstitutions, pendingKYC, approvedKYC, rejectedKYC, totalDocuments, totalStudents };
+        }, 'adminService.getAdminStats');
     },
 };

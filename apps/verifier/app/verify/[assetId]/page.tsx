@@ -20,8 +20,17 @@ import {
     User,
     Hash
 } from 'lucide-react';
-import { getIPFSGatewayUrl } from '@proofchain/chain';
 import { IPFSImage } from '@proofchain/ui';
+
+// Helper function to convert IPFS URL to gateway URL (avoid importing @proofchain/chain which has WASM)
+function getIPFSGatewayUrl(ipfsUrl: string): string {
+    if (!ipfsUrl) return '';
+    if (ipfsUrl.startsWith('ipfs://')) {
+        const hash = ipfsUrl.replace('ipfs://', '');
+        return `https://gateway.pinata.cloud/ipfs/${hash}`;
+    }
+    return ipfsUrl;
+}
 
 // Type pour la réponse de l'API de vérification
 interface VerificationResponse {
@@ -67,19 +76,50 @@ export default function VerifyPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [queryId]);
 
+    // Save to local history
+    const saveToHistory = (data: VerificationResponse) => {
+        try {
+            const historyKey = 'verificationHistory';
+            const existing = localStorage.getItem(historyKey);
+            const history = existing ? JSON.parse(existing) : [];
+            
+            // Create new entry
+            const newEntry = {
+                id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                assetId: queryId,
+                timestamp: Date.now(),
+                valid: data.valid,
+                diplomaName: data.document ? `${data.document.degree} - ${data.document.fieldOfStudy}` : undefined,
+                studentName: data.document?.studentName,
+            };
+            
+            // Remove duplicate if exists
+            const filtered = history.filter((h: { assetId: string }) => h.assetId !== queryId);
+            
+            // Add new entry at the beginning, keep max 20 entries
+            const updated = [newEntry, ...filtered].slice(0, 20);
+            localStorage.setItem(historyKey, JSON.stringify(updated));
+        } catch (err) {
+            console.error('Error saving to history:', err);
+        }
+    };
+
     async function performVerification() {
         setIsLoading(true);
         try {
             const response = await fetch(`/api/verify?q=${encodeURIComponent(queryId)}`);
             const data: VerificationResponse = await response.json();
             setVerification(data);
+            saveToHistory(data);
         } catch (error) {
             console.error('Verification error:', error);
-            setVerification({
+            const errorData = {
                 valid: false,
-                source: 'supabase',
+                source: 'supabase' as const,
                 error: 'Failed to verify diploma',
-            });
+            };
+            setVerification(errorData);
+            saveToHistory(errorData);
         } finally {
             setIsLoading(false);
         }
@@ -262,7 +302,7 @@ export default function VerifyPage() {
                                     <div>
                                         <p className="text-gray-500 dark:text-gray-400">Hash de transaction</p>
                                         <a
-                                            href={`${explorerUrl}/transaction/${verification.document.txHash || verification.blockchain?.txHash}`}
+                                            href={`${explorerUrl}/tx/${verification.document.txHash || verification.blockchain?.txHash}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="flex items-center gap-2 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 font-mono break-all"

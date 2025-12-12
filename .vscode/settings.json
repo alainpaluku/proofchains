@@ -26,6 +26,6 @@
     "**/.DS_Store": true,
     "**/node_modules": false
   },
-  "kiroAgent.configureMCP": "Disabled",
+  "kiroAgent.configureMCP": "Enabled",
   "typescript.autoClosingTags": false
 }

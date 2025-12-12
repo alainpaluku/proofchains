@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Upload,
     Coins,
@@ -8,7 +8,9 @@ import {
     AlertCircle,
     Loader2,
     ExternalLink,
-    Users
+    Users,
+    Download,
+    QrCode
 } from 'lucide-react';
 import { useWallet, ConnectWalletButton } from '@proofchain/ui';
 import { 
@@ -17,6 +19,7 @@ import {
     issuerService,
     type Student 
 } from '@proofchain/shared';
+import QRCode from 'qrcode';
 
 // Types imported dynamically
 type MintingResult = {
@@ -56,24 +59,45 @@ export default function MintPage() {
     const [mintResult, setMintResult] = useState<MintingResult | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [documentId, setDocumentId] = useState<string | null>(null);
+    const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+
+    const generateQRCode = useCallback(async (docId: string) => {
+        const verifyUrl = `${process.env.NEXT_PUBLIC_VERIFIER_URL || 'https://proofchain-verifier.vercel.app'}/verify/${docId}`;
+        try {
+            const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
+                width: 256,
+                margin: 2,
+                color: { dark: '#7c3aed', light: '#ffffff' }
+            });
+            setQrCodeUrl(qrDataUrl);
+        } catch (err) {
+            console.error('Erreur génération QR:', err);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (documentId && mintResult?.success) {
+            generateQRCode(documentId);
+        }
+    }, [documentId, mintResult?.success, generateQRCode]);
 
     useEffect(() => {
         async function loadData() {
             setLoadingStudents(true);
             try {
                 const instResult = await issuerService.getMyInstitution();
-                if (instResult.success && instResult.institution) {
-                    setInstitutionId(instResult.institution.id);
+                if (instResult.success && instResult.data) {
+                    setInstitutionId(instResult.data.id);
                     
-                    if (instResult.institution.kyc_status !== 'approved') {
+                    if (instResult.data.kyc_status !== 'approved') {
                         setError('⚠️ Votre institution doit être validée (KYC approuvé) pour émettre des diplômes.');
                         setLoadingStudents(false);
                         return;
                     }
 
-                    const studentsResult = await studentService.getByInstitution(instResult.institution.id);
-                    if (studentsResult.success && studentsResult.students) {
-                        setStudents(studentsResult.students);
+                    const studentsResult = await studentService.getByInstitution(instResult.data.id);
+                    if (studentsResult.success && studentsResult.data) {
+                        setStudents(studentsResult.data);
                     }
                 } else {
                     setError('⚠️ Vous devez d\'abord créer votre institution et compléter le KYC.');
@@ -164,11 +188,11 @@ export default function MintPage() {
                 ipfsUrl: imageUpload.url,
             });
 
-            if (!docResult.success || !docResult.document) {
+            if (!docResult.success || !docResult.data) {
                 throw new Error(docResult.error || 'Échec création document');
             }
 
-            const document = docResult.document;
+            const document = docResult.data;
             setDocumentId(document.document_id);
 
             setIsUploading(false);
@@ -250,34 +274,54 @@ export default function MintPage() {
                                 Le diplôme NFT a été créé sur la blockchain Cardano.
                             </p>
 
-                            <div className="space-y-3 bg-white dark:bg-gray-800 rounded-lg p-4">
-                                <div>
-                                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                        Document ID (pour vérification):
-                                    </p>
-                                    <code className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded font-mono text-sm block">
-                                        {documentId}
-                                    </code>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-3 bg-white dark:bg-gray-800 rounded-lg p-4">
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                            Document ID (pour vérification):
+                                        </p>
+                                        <code className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded font-mono text-sm block break-all">
+                                            {documentId}
+                                        </code>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                            Transaction Hash:
+                                        </p>
+                                        <a
+                                            href={`${explorerUrl}/tx/${mintResult.txHash}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-purple-600 hover:text-purple-700 font-mono text-sm flex items-center gap-2"
+                                        >
+                                            {mintResult.txHash?.substring(0, 20)}...
+                                            <ExternalLink className="w-4 h-4" />
+                                        </a>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                        Transaction Hash:
-                                    </p>
-                                    <a
-                                        href={`${explorerUrl}/transaction/${mintResult.txHash}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-purple-600 hover:text-purple-700 font-mono text-sm flex items-center gap-2"
-                                    >
-                                        {mintResult.txHash?.substring(0, 20)}...
-                                        <ExternalLink className="w-4 h-4" />
-                                    </a>
-                                </div>
+
+                                {qrCodeUrl && (
+                                    <div className="flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-lg p-4">
+                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3 flex items-center gap-2">
+                                            <QrCode className="w-4 h-4" />
+                                            QR Code de vérification
+                                        </p>
+                                        <img src={qrCodeUrl} alt="QR Code" className="w-40 h-40 rounded-lg" />
+                                        <a
+                                            href={qrCodeUrl}
+                                            download={`diploma-qr-${documentId}.png`}
+                                            className="mt-3 flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700"
+                                        >
+                                            <Download className="w-4 h-4" />
+                                            Télécharger QR
+                                        </a>
+                                    </div>
+                                )}
                             </div>
 
-                            <div className="mt-4 flex gap-3">
+                            <div className="mt-4 flex flex-wrap gap-3">
                                 <a
-                                    href={`${process.env.NEXT_PUBLIC_VERIFIER_URL || 'http://localhost:3000'}/verify/${documentId}`}
+                                    href={`${process.env.NEXT_PUBLIC_VERIFIER_URL || 'https://proofchain-verifier.vercel.app'}/verify/${documentId}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
@@ -285,7 +329,7 @@ export default function MintPage() {
                                     Vérifier le Document
                                 </a>
                                 <button
-                                    onClick={() => setMintResult(null)}
+                                    onClick={() => { setMintResult(null); setQrCodeUrl(null); }}
                                     className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm font-medium"
                                 >
                                     Émettre un autre diplôme

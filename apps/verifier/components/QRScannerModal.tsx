@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Camera, AlertCircle, RefreshCw } from 'lucide-react';
+import { Html5Qrcode } from 'html5-qrcode';
 
 interface QRScannerModalProps {
     isOpen: boolean;
@@ -10,111 +11,119 @@ interface QRScannerModalProps {
 }
 
 export default function QRScannerModal({ isOpen, onClose, onScan }: QRScannerModalProps) {
-    const videoRef = useRef<HTMLVideoElement>(null);
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const scannerRef = useRef<Html5Qrcode | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [isScanning, setIsScanning] = useState(false);
-    const [stream, setStream] = useState<MediaStream | null>(null);
-    const scanIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const [isInitializing, setIsInitializing] = useState(false);
+    const containerId = 'qr-reader';
 
-    const startCamera = async () => {
+    const startScanner = async () => {
         setError(null);
+        setIsInitializing(true);
+
         try {
-            const mediaStream = await navigator.mediaDevices.getUserMedia({
-                video: { 
-                    facingMode: 'environment',
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
+            // Clean up any existing scanner
+            if (scannerRef.current) {
+                try {
+                    await scannerRef.current.stop();
+                } catch (e) {
+                    // Ignore stop errors
                 }
-            });
-            
-            if (videoRef.current) {
-                videoRef.current.srcObject = mediaStream;
-                await videoRef.current.play();
-                setStream(mediaStream);
-                setIsScanning(true);
-                startScanning();
+                scannerRef.current = null;
             }
-        } catch (err) {
-            console.error('Camera error:', err);
-            if (err instanceof Error) {
-                if (err.name === 'NotAllowedError') {
-                    setError('Accès à la caméra refusé. Veuillez autoriser l\'accès.');
-                } else if (err.name === 'NotFoundError') {
-                    setError('Aucune caméra détectée sur cet appareil.');
-                } else {
-                    setError('Erreur caméra: ' + err.message);
+
+            // Create new scanner instance
+            const html5QrCode = new Html5Qrcode(containerId);
+            scannerRef.current = html5QrCode;
+
+            // Get available cameras
+            const cameras = await Html5Qrcode.getCameras();
+            if (cameras.length === 0) {
+                throw new Error('NotFoundError');
+            }
+
+            // Prefer back camera on mobile
+            const backCamera = cameras.find(c => 
+                c.label.toLowerCase().includes('back') || 
+                c.label.toLowerCase().includes('arrière') ||
+                c.label.toLowerCase().includes('environment')
+            );
+            const cameraId = backCamera?.id || cameras[cameras.length - 1].id;
+
+            await html5QrCode.start(
+                cameraId,
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1,
+                },
+                (decodedText) => {
+                    handleScanSuccess(decodedText);
+                },
+                () => {
+                    // QR code not found - ignore
                 }
+            );
+
+            setIsScanning(true);
+        } catch (err: any) {
+            console.error('Scanner error:', err);
+            if (err.name === 'NotAllowedError' || err.message?.includes('NotAllowedError')) {
+                setError('Accès à la caméra refusé. Veuillez autoriser l\'accès dans les paramètres de votre navigateur.');
+            } else if (err.name === 'NotFoundError' || err.message === 'NotFoundError') {
+                setError('Aucune caméra détectée sur cet appareil.');
+            } else {
+                setError('Erreur caméra: ' + (err.message || 'Impossible de démarrer le scanner'));
             }
+        } finally {
+            setIsInitializing(false);
         }
     };
 
-    const stopCamera = () => {
-        if (scanIntervalRef.current) {
-            clearInterval(scanIntervalRef.current);
-            scanIntervalRef.current = null;
-        }
-        if (stream) {
-            stream.getTracks().forEach(track => track.stop());
-            setStream(null);
-        }
-        if (videoRef.current) {
-            videoRef.current.srcObject = null;
+    const stopScanner = async () => {
+        if (scannerRef.current) {
+            try {
+                if (scannerRef.current.isScanning) {
+                    await scannerRef.current.stop();
+                }
+            } catch (e) {
+                // Ignore stop errors
+            }
+            scannerRef.current = null;
         }
         setIsScanning(false);
     };
 
-    const startScanning = () => {
-        if (scanIntervalRef.current) return;
+    const handleScanSuccess = async (result: string) => {
+        // Extract document ID from URL if it's a full URL
+        let documentId = result;
         
-        scanIntervalRef.current = setInterval(() => {
-            scanQRCode();
-        }, 200);
-    };
-
-    const scanQRCode = async () => {
-        if (!videoRef.current || !canvasRef.current || !isScanning) return;
-
-        const video = videoRef.current;
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        
-        if (!ctx || video.readyState !== video.HAVE_ENOUGH_DATA) return;
-
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        try {
-            // Use BarcodeDetector API if available (modern browsers)
-            if ('BarcodeDetector' in window) {
-                const barcodeDetector = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
-                const barcodes = await barcodeDetector.detect(canvas);
-                if (barcodes.length > 0) {
-                    handleScanSuccess(barcodes[0].rawValue);
-                }
-            }
-        } catch (err) {
-            // BarcodeDetector not supported, continue scanning
+        // Check if it's a verification URL
+        const verifyMatch = result.match(/\/verify\/([^\/\?]+)/);
+        if (verifyMatch) {
+            documentId = decodeURIComponent(verifyMatch[1]);
         }
-    };
 
-    const handleScanSuccess = (result: string) => {
-        stopCamera();
-        onScan(result);
+        await stopScanner();
+        onScan(documentId);
         onClose();
     };
 
     useEffect(() => {
         if (isOpen) {
-            startCamera();
+            // Small delay to ensure DOM is ready
+            const timer = setTimeout(() => {
+                startScanner();
+            }, 100);
+            return () => clearTimeout(timer);
         } else {
-            stopCamera();
+            stopScanner();
         }
 
         return () => {
-            stopCamera();
+            stopScanner();
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen]);
 
     if (!isOpen) return null;
@@ -145,13 +154,13 @@ export default function QRScannerModal({ isOpen, onClose, onScan }: QRScannerMod
                 </div>
 
                 {/* Scanner Area */}
-                <div className="relative aspect-square bg-black">
+                <div className="relative bg-black" style={{ minHeight: '350px' }}>
                     {error ? (
                         <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
                             <AlertCircle className="w-16 h-16 text-red-500 mb-4" />
                             <p className="text-white mb-4">{error}</p>
                             <button
-                                onClick={startCamera}
+                                onClick={startScanner}
                                 className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-colors"
                             >
                                 <RefreshCw className="w-4 h-4" />
@@ -160,32 +169,18 @@ export default function QRScannerModal({ isOpen, onClose, onScan }: QRScannerMod
                         </div>
                     ) : (
                         <>
-                            <video
-                                ref={videoRef}
-                                className="w-full h-full object-cover"
-                                playsInline
-                                muted
+                            {/* QR Scanner Container */}
+                            <div 
+                                id={containerId} 
+                                className="w-full"
+                                style={{ minHeight: '350px' }}
                             />
-                            <canvas ref={canvasRef} className="hidden" />
                             
-                            {/* Scan overlay */}
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                <div className="relative w-64 h-64">
-                                    {/* Corner markers */}
-                                    <div className="absolute top-0 left-0 w-12 h-12 border-t-4 border-l-4 border-purple-500 rounded-tl-xl" />
-                                    <div className="absolute top-0 right-0 w-12 h-12 border-t-4 border-r-4 border-purple-500 rounded-tr-xl" />
-                                    <div className="absolute bottom-0 left-0 w-12 h-12 border-b-4 border-l-4 border-purple-500 rounded-bl-xl" />
-                                    <div className="absolute bottom-0 right-0 w-12 h-12 border-b-4 border-r-4 border-purple-500 rounded-br-xl" />
-                                    
-                                    {/* Scanning line animation */}
-                                    <div className="absolute inset-x-4 h-0.5 bg-gradient-to-r from-transparent via-purple-500 to-transparent animate-scan" />
-                                </div>
-                            </div>
-
                             {/* Loading indicator */}
-                            {!isScanning && !error && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                                    <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                            {isInitializing && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70">
+                                    <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4" />
+                                    <p className="text-white text-sm">Initialisation de la caméra...</p>
                                 </div>
                             )}
                         </>
@@ -195,21 +190,13 @@ export default function QRScannerModal({ isOpen, onClose, onScan }: QRScannerMod
                 {/* Footer */}
                 <div className="p-4 bg-gray-50 dark:bg-gray-800">
                     <p className="text-sm text-center text-gray-600 dark:text-gray-400">
-                        Placez le QR code dans le cadre pour le scanner
+                        {isScanning 
+                            ? 'Placez le QR code dans le cadre pour le scanner'
+                            : 'Préparation du scanner...'
+                        }
                     </p>
                 </div>
             </div>
-
-            {/* CSS for scan animation */}
-            <style jsx>{`
-                @keyframes scan {
-                    0%, 100% { top: 10%; }
-                    50% { top: 90%; }
-                }
-                .animate-scan {
-                    animation: scan 2s ease-in-out infinite;
-                }
-            `}</style>
         </div>
     );
 }

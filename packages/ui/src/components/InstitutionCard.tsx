@@ -108,7 +108,7 @@ export function InstitutionCard({
                 {txHash && (
                     <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                         <a
-                            href={`${explorerUrl}/transaction/${txHash}`}
+                            href={`${explorerUrl}/tx/${txHash}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"

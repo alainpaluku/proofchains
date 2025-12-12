@@ -1,10 +1,10 @@
 /**
  * PROOFCHAIN - Student Service
- * Service pour gérer les étudiants avec Supabase
+ * Gestion des étudiants
  */
 
-import { getSupabaseClient, isSupabaseConfigured } from '../lib/supabase';
-import type { Student } from '../types/database.types';
+import { withSupabase, getSupabaseClient } from './base.service';
+import type { ServiceResponse, Student } from '../types';
 
 export interface CreateStudentData {
     fullName: string;
@@ -26,17 +26,8 @@ export interface UpdateStudentData {
 }
 
 export const studentService = {
-    /**
-     * Créer un nouvel étudiant
-     */
-    async create(institutionId: string, data: CreateStudentData): Promise<{ success: boolean; student?: Student; error?: string }> {
-        if (!isSupabaseConfigured()) {
-            return { success: false, error: 'Supabase non configuré' };
-        }
-
-        try {
-            const supabase = getSupabaseClient();
-            
+    async create(institutionId: string, data: CreateStudentData): Promise<ServiceResponse<Student>> {
+        return withSupabase(async (supabase) => {
             const { data: student, error } = await supabase
                 .from('students')
                 .insert({
@@ -54,26 +45,13 @@ export const studentService = {
                 .single();
 
             if (error) throw error;
-
-            return { success: true, student };
-        } catch (error: any) {
-            console.error('Erreur création étudiant:', error);
-            return { success: false, error: error.message };
-        }
+            return student;
+        }, 'création étudiant');
     },
 
-    /**
-     * Mettre à jour un étudiant
-     */
-    async update(studentId: string, data: UpdateStudentData): Promise<{ success: boolean; student?: Student; error?: string }> {
-        if (!isSupabaseConfigured()) {
-            return { success: false, error: 'Supabase non configuré' };
-        }
-
-        try {
-            const supabase = getSupabaseClient();
-            
-            const updateData: any = {};
+    async update(studentId: string, data: UpdateStudentData): Promise<ServiceResponse<Student>> {
+        return withSupabase(async (supabase) => {
+            const updateData: Record<string, unknown> = {};
             if (data.fullName) updateData.full_name = data.fullName;
             if (data.email !== undefined) updateData.email = data.email;
             if (data.phone !== undefined) updateData.phone = data.phone;
@@ -89,50 +67,19 @@ export const studentService = {
                 .single();
 
             if (error) throw error;
-
-            return { success: true, student };
-        } catch (error: any) {
-            console.error('Erreur mise à jour étudiant:', error);
-            return { success: false, error: error.message };
-        }
+            return student;
+        }, 'mise à jour étudiant');
     },
 
-    /**
-     * Supprimer un étudiant
-     */
-    async delete(studentId: string): Promise<{ success: boolean; error?: string }> {
-        if (!isSupabaseConfigured()) {
-            return { success: false, error: 'Supabase non configuré' };
-        }
-
-        try {
-            const supabase = getSupabaseClient();
-            
-            const { error } = await supabase
-                .from('students')
-                .delete()
-                .eq('id', studentId);
-
+    async delete(studentId: string): Promise<ServiceResponse<void>> {
+        return withSupabase(async (supabase) => {
+            const { error } = await supabase.from('students').delete().eq('id', studentId);
             if (error) throw error;
-
-            return { success: true };
-        } catch (error: any) {
-            console.error('Erreur suppression étudiant:', error);
-            return { success: false, error: error.message };
-        }
+        }, 'suppression étudiant');
     },
 
-    /**
-     * Récupérer un étudiant par ID
-     */
-    async getById(studentId: string): Promise<{ success: boolean; student?: Student; error?: string }> {
-        if (!isSupabaseConfigured()) {
-            return { success: false, error: 'Supabase non configuré' };
-        }
-
-        try {
-            const supabase = getSupabaseClient();
-            
+    async getById(studentId: string): Promise<ServiceResponse<Student>> {
+        return withSupabase(async (supabase) => {
             const { data, error } = await supabase
                 .from('students')
                 .select('*')
@@ -140,25 +87,12 @@ export const studentService = {
                 .single();
 
             if (error) throw error;
-
-            return { success: true, student: data };
-        } catch (error: any) {
-            console.error('Erreur récupération étudiant:', error);
-            return { success: false, error: error.message };
-        }
+            return data;
+        }, 'récupération étudiant');
     },
 
-    /**
-     * Récupérer tous les étudiants d'une institution
-     */
-    async getByInstitution(institutionId: string): Promise<{ success: boolean; students?: Student[]; error?: string }> {
-        if (!isSupabaseConfigured()) {
-            return { success: false, error: 'Supabase non configuré' };
-        }
-
-        try {
-            const supabase = getSupabaseClient();
-            
+    async getByInstitution(institutionId: string): Promise<ServiceResponse<Student[]>> {
+        return withSupabase(async (supabase) => {
             const { data, error } = await supabase
                 .from('students')
                 .select('*')
@@ -166,25 +100,12 @@ export const studentService = {
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
-
-            return { success: true, students: data };
-        } catch (error: any) {
-            console.error('Erreur récupération étudiants:', error);
-            return { success: false, error: error.message };
-        }
+            return data || [];
+        }, 'récupération étudiants');
     },
 
-    /**
-     * Rechercher des étudiants
-     */
-    async search(institutionId: string, query: string): Promise<{ success: boolean; students?: Student[]; error?: string }> {
-        if (!isSupabaseConfigured()) {
-            return { success: false, error: 'Supabase non configuré' };
-        }
-
-        try {
-            const supabase = getSupabaseClient();
-            
+    async search(institutionId: string, query: string): Promise<ServiceResponse<Student[]>> {
+        return withSupabase(async (supabase) => {
             const { data, error } = await supabase
                 .from('students')
                 .select('*')
@@ -193,29 +114,12 @@ export const studentService = {
                 .order('full_name', { ascending: true });
 
             if (error) throw error;
-
-            return { success: true, students: data };
-        } catch (error: any) {
-            console.error('Erreur recherche étudiants:', error);
-            return { success: false, error: error.message };
-        }
+            return data || [];
+        }, 'recherche étudiants');
     },
 
-    /**
-     * Récupérer les statistiques des étudiants d'une institution
-     */
-    async getStats(institutionId: string): Promise<{ 
-        success: boolean; 
-        stats?: { total: number; active: number; graduated: number; suspended: number }; 
-        error?: string 
-    }> {
-        if (!isSupabaseConfigured()) {
-            return { success: false, error: 'Supabase non configuré' };
-        }
-
-        try {
-            const supabase = getSupabaseClient();
-            
+    async getStats(institutionId: string): Promise<ServiceResponse<{ total: number; active: number; graduated: number; suspended: number }>> {
+        return withSupabase(async (supabase) => {
             const { data, error } = await supabase
                 .from('students')
                 .select('status')
@@ -223,67 +127,38 @@ export const studentService = {
 
             if (error) throw error;
 
-            const stats = {
-                total: data?.length || 0,
-                active: data?.filter((s: { status: string }) => s.status === 'active').length || 0,
-                graduated: data?.filter((s: { status: string }) => s.status === 'graduated').length || 0,
-                suspended: data?.filter((s: { status: string }) => s.status === 'suspended').length || 0,
+            const students = data || [];
+            return {
+                total: students.length,
+                active: students.filter((s: { status: string | null }) => s.status === 'active').length,
+                graduated: students.filter((s: { status: string | null }) => s.status === 'graduated').length,
+                suspended: students.filter((s: { status: string | null }) => s.status === 'suspended').length,
             };
-
-            return { success: true, stats };
-        } catch (error: any) {
-            console.error('Erreur récupération stats:', error);
-            return { success: false, error: error.message };
-        }
+        }, 'stats étudiants');
     },
 
-    /**
-     * Import CSV d'étudiants
-     */
-    async importFromCSV(
-        institutionId: string, 
-        students: CreateStudentData[]
-    ): Promise<{ success: boolean; imported: number; errors: string[]; error?: string }> {
-        if (!isSupabaseConfigured()) {
-            return { success: false, imported: 0, errors: [], error: 'Supabase non configuré' };
-        }
-
+    async importFromCSV(institutionId: string, students: CreateStudentData[]): Promise<{ success: boolean; imported: number; errors: string[] }> {
+        const supabase = getSupabaseClient();
         const errors: string[] = [];
         let imported = 0;
 
-        try {
-            const supabase = getSupabaseClient();
+        for (const student of students) {
+            const { error } = await supabase.from('students').insert({
+                institution_id: institutionId,
+                full_name: student.fullName,
+                email: student.email || null,
+                phone: student.phone || null,
+                student_number: student.studentNumber,
+                program: student.program || null,
+                field_of_study: student.fieldOfStudy || null,
+                enrollment_date: student.enrollmentDate || null,
+                status: 'active',
+            });
 
-            for (const student of students) {
-                try {
-                    const { error } = await supabase
-                        .from('students')
-                        .insert({
-                            institution_id: institutionId,
-                            full_name: student.fullName,
-                            email: student.email || null,
-                            phone: student.phone || null,
-                            student_number: student.studentNumber,
-                            program: student.program || null,
-                            field_of_study: student.fieldOfStudy || null,
-                            enrollment_date: student.enrollmentDate || null,
-                            status: 'active',
-                        });
-
-                    if (error) {
-                        errors.push(`${student.studentNumber}: ${error.message}`);
-                    } else {
-                        imported++;
-                    }
-                } catch (e: any) {
-                    errors.push(`${student.studentNumber}: ${e.message}`);
-                }
-            }
-
-            return { success: true, imported, errors };
-        } catch (error: any) {
-            console.error('Erreur import CSV:', error);
-            return { success: false, imported, errors, error: error.message };
+            if (error) errors.push(`${student.studentNumber}: ${error.message}`);
+            else imported++;
         }
+
+        return { success: true, imported, errors };
     },
 };

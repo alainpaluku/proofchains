@@ -6,11 +6,11 @@
 'use client';
 
 import React, { createContext, useContext, useReducer, useCallback, ReactNode } from 'react';
-import type { User, Notification, Institution } from '../types';
+import type { AuthUser, Notification, Institution } from '../types';
 
 // State
 interface AppState {
-    user: User | null;
+    user: AuthUser | null;
     institution: Institution | null;
     notifications: Notification[];
     isLoading: boolean;
@@ -19,7 +19,7 @@ interface AppState {
 
 // Actions
 type AppAction =
-    | { type: 'SET_USER'; payload: User | null }
+    | { type: 'SET_USER'; payload: AuthUser | null }
     | { type: 'SET_INSTITUTION'; payload: Institution | null }
     | { type: 'ADD_NOTIFICATION'; payload: Notification }
     | { type: 'MARK_NOTIFICATION_READ'; payload: string }
@@ -65,7 +65,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
 
 // Context
 interface AppContextValue extends AppState {
-    setUser: (user: User | null) => void;
+    setUser: (user: AuthUser | null) => void;
     setInstitution: (institution: Institution | null) => void;
     addNotification: (notification: Omit<Notification, 'id' | 'createdAt' | 'read'>) => void;
     markNotificationRead: (id: string) => void;
@@ -80,7 +80,7 @@ const AppContext = createContext<AppContextValue | undefined>(undefined);
 export function AppProvider({ children }: { children: ReactNode }) {
     const [state, dispatch] = useReducer(appReducer, initialState);
 
-    const setUser = useCallback((user: User | null) => {
+    const setUser = useCallback((user: AuthUser | null) => {
         dispatch({ type: 'SET_USER', payload: user });
     }, []);
 
@@ -92,7 +92,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const fullNotification: Notification = {
             ...notification,
             id: Date.now().toString(),
-            createdAt: new Date(),
+            createdAt: new Date().toISOString(),
             read: false,
         };
         dispatch({ type: 'ADD_NOTIFICATION', payload: fullNotification });

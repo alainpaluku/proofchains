@@ -1,82 +1,92 @@
-# 🔐 PROOFCHAIN - Blockchain Academic Credentials
+# 🔐 PROOFCHAIN
 
-Système de vérification et d'émission de diplômes académiques sur la blockchain Cardano.
+Plateforme de vérification et d'émission de diplômes académiques sur la blockchain Cardano.
 
 ## 📦 Applications
 
-### Verifier (Port 3000)
-Application de vérification de diplômes pour le grand public.
+| App | Port | Description |
+|-----|------|-------------|
+| Landing | 3003 | Page d'accueil publique |
+| Verifier | 3000 | Vérification de diplômes |
+| Issuer | 3001 | Émission de diplômes (institutions) |
+| Admin | 3002 | Administration plateforme |
 
-### Issuer (Port 3001)
-Application d'émission de diplômes pour les institutions.
-
-### Admin (Port 3002)
-Application d'administration de la plateforme.
-
-## 🚀 Démarrage rapide
+## 🚀 Démarrage
 
 ```bash
-# Installer les dépendances
 npm install
-
-# Lancer toutes les applications
 npm run dev
 ```
-
-### Accès
-- **Verifier**: http://localhost:3000
-- **Issuer**: http://localhost:3001
-- **Admin**: http://localhost:3002
 
 ## 🏗️ Architecture
 
 ```
 proofchain/
 ├── apps/
-│   ├── verifier/          # App de vérification (Port 3000)
-│   ├── issuer/            # App d'émission (Port 3001)
-│   └── admin/             # App d'administration (Port 3002)
+│   ├── landing/       # Landing page
+│   ├── verifier/      # Vérification publique
+│   ├── issuer/        # Portail institutions
+│   └── admin/         # Administration
 ├── packages/
-│   ├── ui/                # Composants UI partagés
-│   ├── shared/            # Logique métier partagée
-│   └── chain/             # Logique blockchain
-└── supabase/              # Schéma base de données
+│   ├── ui/            # Composants UI partagés
+│   ├── shared/        # Services et logique métier
+│   └── chain/         # Intégration Cardano
+└── supabase/          # Schéma base de données
 ```
 
-## 🎨 Stack technique
+## 🎨 Stack
 
-- **Framework**: Next.js 15
-- **UI**: React 18, Tailwind CSS 3.4
-- **Language**: TypeScript 5.6
-- **Blockchain**: Cardano (Blockfrost API)
+- **Framework**: Next.js 15, React 18
+- **Styling**: Tailwind CSS
+- **Language**: TypeScript
+- **Blockchain**: Cardano (Blockfrost)
 - **Storage**: IPFS (Pinata)
-- **Database**: Supabase
-- **Wallet**: Nami, Lace
+- **Database**: Supabase (PostgreSQL)
+- **Monorepo**: Turborepo
 
 ## 🔧 Commandes
 
 ```bash
-npm run dev              # Lancer toutes les apps
-npm run verifier:dev     # Lancer uniquement Verifier
-npm run issuer:dev       # Lancer uniquement Issuer
-npm run admin:dev        # Lancer uniquement Admin
-npm run build            # Build toutes les apps
-npm run lint             # Vérifier le code
+npm run dev              # Toutes les apps
+npm run verifier:dev     # Verifier uniquement
+npm run issuer:dev       # Issuer uniquement
+npm run admin:dev        # Admin uniquement
+npm run build            # Build production
+npm run lint             # Linting
 ```
 
-## 📝 Variables d'environnement
+## � Configuration
 
-Créer un fichier `.env` à la racine avec :
+Créer `.env` à la racine :
 
 ```env
-NEXT_PUBLIC_BLOCKFROST_PROJECT_ID=your_key
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key
+
+# Blockfrost (Cardano)
+NEXT_PUBLIC_BLOCKFROST_PROJECT_ID=your_project_id
 NEXT_PUBLIC_BLOCKFROST_NETWORK=preprod
 NEXT_PUBLIC_CARDANO_EXPLORER=https://preprod.cardanoscan.io
-NEXT_PUBLIC_PINATA_API_KEY=your_pinata_key
-NEXT_PUBLIC_PINATA_SECRET_KEY=your_pinata_secret
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# Pinata (IPFS)
+PINATA_JWT=your_jwt
+NEXT_PUBLIC_PINATA_JWT=your_jwt
+
+# URLs
+NEXT_PUBLIC_VERIFIER_URL=https://your-verifier.vercel.app
+NEXT_PUBLIC_ISSUER_URL=https://your-issuer.vercel.app
+NEXT_PUBLIC_ADMIN_URL=https://your-admin.vercel.app
 ```
+
+## � Fonctionnalités
+
+- ✅ Émission de diplômes NFT sur Cardano
+- ✅ Vérification par QR code ou ID document
+- ✅ Validation KYC des institutions
+- ✅ Stockage IPFS des documents
+- ✅ Dashboard admin avec statistiques
+- ✅ Authentification Supabase
 
 ## 📄 License
 

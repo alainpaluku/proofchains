@@ -1,37 +1,47 @@
 /**
  * PROOFCHAIN - Stats Service
- * Service pour récupérer les statistiques
+ * Statistiques globales et par institution
  */
 
-import { api } from './api';
-import type { Stats, ApiResponse } from '../types';
+import { withSupabase, countRecords } from './base.service';
+import type { ServiceResponse, GlobalStats } from '../types';
 
 export const statsService = {
     /**
-     * Récupérer les statistiques globales
+     * Récupère les statistiques globales (admin)
      */
-    async getGlobal(): Promise<ApiResponse<Stats>> {
-        return api.get('/stats/global');
+    async getGlobal(): Promise<ServiceResponse<GlobalStats>> {
+        return withSupabase(async () => {
+            const [totalInstitutions, totalStudents, totalDiplomas, totalVerifications, pendingKYC] = 
+                await Promise.all([
+                    countRecords('institutions'),
+                    countRecords('students'),
+                    countRecords('documents'),
+                    countRecords('verification_logs'),
+                    countRecords('institutions', { column: 'kyc_status', value: 'pending' }),
+                ]);
+
+            return { totalInstitutions, totalStudents, totalDiplomas, totalVerifications, pendingKYC };
+        }, 'statsService.getGlobal');
     },
 
     /**
-     * Récupérer les statistiques d'une institution
+     * Récupère les statistiques d'une institution
      */
-    async getByInstitution(institutionId: string): Promise<ApiResponse<Stats>> {
-        return api.get(`/stats/institution/${institutionId}`);
-    },
+    async getByInstitution(institutionId: string): Promise<ServiceResponse<GlobalStats>> {
+        return withSupabase(async () => {
+            const [totalStudents, totalDiplomas] = await Promise.all([
+                countRecords('students', { column: 'institution_id', value: institutionId }),
+                countRecords('documents', { column: 'institution_id', value: institutionId }),
+            ]);
 
-    /**
-     * Récupérer les statistiques mensuelles
-     */
-    async getMonthly(year: number, month: number): Promise<ApiResponse<any>> {
-        return api.get(`/stats/monthly?year=${year}&month=${month}`);
-    },
-
-    /**
-     * Récupérer les statistiques annuelles
-     */
-    async getYearly(year: number): Promise<ApiResponse<any>> {
-        return api.get(`/stats/yearly?year=${year}`);
+            return { 
+                totalInstitutions: 1, 
+                totalStudents, 
+                totalDiplomas, 
+                totalVerifications: 0, 
+                pendingKYC: 0 
+            };
+        }, 'statsService.getByInstitution');
     },
 };

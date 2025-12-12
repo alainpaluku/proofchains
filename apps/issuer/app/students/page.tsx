@@ -24,11 +24,11 @@ export default function StudentsPage() {
         setLoading(true);
         try {
             const instResult = await issuerService.getMyInstitution();
-            if (instResult.success && instResult.institution) {
-                setInstitutionId(instResult.institution.id);
-                const studentsResult = await studentService.getByInstitution(instResult.institution.id);
-                if (studentsResult.success && studentsResult.students) {
-                    setStudents(studentsResult.students);
+            if (instResult.success && instResult.data) {
+                setInstitutionId(instResult.data.id);
+                const studentsResult = await studentService.getByInstitution(instResult.data.id);
+                if (studentsResult.success && studentsResult.data) {
+                    setStudents(studentsResult.data);
                 }
             } else {
                 setError('Veuillez d\'abord créer votre institution.');
@@ -50,8 +50,8 @@ export default function StudentsPage() {
             phone: formData.phone || undefined, studentNumber: formData.studentNumber,
             program: formData.program || undefined, fieldOfStudy: formData.fieldOfStudy || undefined,
         });
-        if (result.success && result.student) {
-            setStudents([result.student, ...students]);
+        if (result.success && result.data) {
+            setStudents([result.data, ...students]);
             setShowModal(false);
             setFormData({ fullName: '', email: '', phone: '', studentNumber: '', program: '', fieldOfStudy: '' });
         } else { alert(result.error || 'Erreur lors de l\'ajout'); }

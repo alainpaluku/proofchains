@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, CheckCircle, AlertCircle, Info, ArrowLeft, Loader2, FileCheck, Award, Users } from 'lucide-react';
-import { issuerService } from '@proofchain/shared';
+import { Bell, CheckCircle, AlertCircle, Info, ArrowLeft, Loader2, FileCheck, Building2, Users } from 'lucide-react';
+import { adminService } from '@proofchain/shared';
 
 interface Notification {
     id: string;
@@ -26,58 +26,70 @@ export default function NotificationsPage() {
     const loadNotifications = async () => {
         setLoading(true);
         try {
-            // Charger l'activité récente comme notifications
-            const activityResult = await issuerService.getRecentActivity(20);
-            
-            if (activityResult.success && activityResult.data) {
-                const notifs: Notification[] = activityResult.data.map((activity, index) => ({
-                    id: activity.id || String(index),
-                    type: 'success' as const,
-                    title: 'Document créé',
-                    message: activity.description,
-                    time: new Date(activity.createdAt).toLocaleString('fr-FR'),
-                    read: index > 2, // Les 3 premiers sont non lus
-                }));
-                setNotifications(notifs);
+            const notifs: Notification[] = [];
+
+            // Charger les demandes KYC en attente
+            const kycResult = await adminService.getPendingKYCRequests();
+            if (kycResult.success && kycResult.data) {
+                kycResult.data.forEach((req, index) => {
+                    notifs.push({
+                        id: `kyc-${req.id}`,
+                        type: 'warning',
+                        title: 'Nouvelle demande KYC',
+                        message: `${req.name} (${req.email}) a soumis une demande de vérification KYC.`,
+                        time: req.kycSubmittedAt ? new Date(req.kycSubmittedAt).toLocaleString('fr-FR') : 'Récemment',
+                        read: index > 1,
+                    });
+                });
             }
 
-            // Charger aussi le statut KYC pour ajouter une notification si nécessaire
-            const instResult = await issuerService.getMyInstitution();
-            if (instResult.success && instResult.data) {
-                const inst = instResult.data;
-                const kycNotifs: Notification[] = [];
-
-                if (inst.kyc_status === 'approved') {
-                    kycNotifs.push({
-                        id: 'kyc-approved',
-                        type: 'success',
-                        title: 'KYC Approuvé',
-                        message: 'Votre vérification KYC a été approuvée. Vous pouvez maintenant émettre des diplômes.',
-                        time: inst.kyc_reviewed_at ? new Date(inst.kyc_reviewed_at).toLocaleString('fr-FR') : 'Récemment',
+            // Charger les stats pour générer des notifications système
+            const statsResult = await adminService.getAdminStats();
+            if (statsResult.success && statsResult.data) {
+                const stats = statsResult.data;
+                
+                if (stats.totalInstitutions > 0) {
+                    notifs.push({
+                        id: 'stats-institutions',
+                        type: 'info',
+                        title: 'Statistiques plateforme',
+                        message: `${stats.totalInstitutions} institution(s) enregistrée(s), ${stats.approvedKYC} approuvée(s), ${stats.totalDocuments} document(s) émis.`,
+                        time: new Date().toLocaleString('fr-FR'),
                         read: true,
-                    });
-                } else if (inst.kyc_status === 'pending') {
-                    kycNotifs.push({
-                        id: 'kyc-pending',
-                        type: 'warning',
-                        title: 'KYC en attente',
-                        message: 'Votre demande KYC est en cours de vérification. Nous vous notifierons dès qu\'elle sera traitée.',
-                        time: inst.kyc_submitted_at ? new Date(inst.kyc_submitted_at).toLocaleString('fr-FR') : 'Récemment',
-                        read: false,
-                    });
-                } else if (inst.kyc_status === 'rejected') {
-                    kycNotifs.push({
-                        id: 'kyc-rejected',
-                        type: 'warning',
-                        title: 'KYC Rejeté',
-                        message: inst.kyc_rejection_reason || 'Votre demande KYC a été rejetée. Veuillez soumettre à nouveau.',
-                        time: inst.kyc_reviewed_at ? new Date(inst.kyc_reviewed_at).toLocaleString('fr-FR') : 'Récemment',
-                        read: false,
                     });
                 }
 
-                setNotifications(prev => [...kycNotifs, ...prev]);
+                if (stats.pendingKYC > 0) {
+                    notifs.unshift({
+                        id: 'pending-kyc-alert',
+                        type: 'warning',
+                        title: 'KYC en attente',
+                        message: `${stats.pendingKYC} demande(s) KYC en attente de validation.`,
+                        time: 'Maintenant',
+                        read: false,
+                    });
+                }
             }
+
+            // Charger les institutions récentes
+            const instResult = await adminService.getAllInstitutions();
+            if (instResult.success && instResult.data) {
+                const recentInsts = instResult.data.slice(0, 5);
+                recentInsts.forEach((inst, index) => {
+                    if (inst.kyc_status === 'approved') {
+                        notifs.push({
+                            id: `inst-approved-${inst.id}`,
+                            type: 'success',
+                            title: 'Institution approuvée',
+                            message: `${inst.name} a été approuvée et peut maintenant émettre des diplômes.`,
+                            time: inst.kyc_reviewed_at ? new Date(inst.kyc_reviewed_at).toLocaleString('fr-FR') : 'Récemment',
+                            read: true,
+                        });
+                    }
+                });
+            }
+
+            setNotifications(notifs);
         } catch (err) {
             console.error('Erreur chargement notifications:', err);
         }
@@ -95,8 +107,9 @@ export default function NotificationsPage() {
     };
 
     const getIcon = (type: string, title: string) => {
-        if (title.includes('KYC')) return <FileCheck className="w-5 h-5 text-purple-600" />;
-        if (title.includes('Document')) return <Award className="w-5 h-5 text-blue-600" />;
+        if (title.includes('KYC')) return <FileCheck className="w-5 h-5 text-yellow-600" />;
+        if (title.includes('Institution')) return <Building2 className="w-5 h-5 text-green-600" />;
+        if (title.includes('Statistiques')) return <Users className="w-5 h-5 text-blue-600" />;
         switch (type) {
             case 'success': return <CheckCircle className="w-5 h-5 text-green-600" />;
             case 'warning': return <AlertCircle className="w-5 h-5 text-yellow-600" />;
@@ -124,7 +137,7 @@ export default function NotificationsPage() {
                             <div>
                                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                     <Bell className="w-6 h-6 text-purple-600" />
-                                    Notifications
+                                    Notifications Admin
                                 </h1>
                                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{unreadCount} non lue{unreadCount > 1 ? 's' : ''}</p>
                             </div>
@@ -145,7 +158,7 @@ export default function NotificationsPage() {
                             <Bell className="w-10 h-10 text-gray-400" />
                         </div>
                         <p className="text-gray-600 dark:text-gray-400 font-medium text-lg">Aucune notification</p>
-                        <p className="text-sm text-gray-500 mt-2">Vous êtes à jour !</p>
+                        <p className="text-sm text-gray-500 mt-2">Tout est à jour !</p>
                     </div>
                 ) : (
                     <div className="space-y-3">

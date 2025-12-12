@@ -1,11 +1,10 @@
 /**
  * PROOFCHAIN - Document Service
- * Service pour gérer les documents/diplômes avec Supabase
- * Les données complètes sont stockées dans Supabase, seul l'ID est sur la blockchain
+ * Gestion des documents/diplômes
  */
 
-import { getSupabaseClient, isSupabaseConfigured } from '../lib/supabase';
-import type { Document, Student, Institution } from '../types/database.types';
+import { withSupabase } from './base.service';
+import type { ServiceResponse, Document, Student, Institution } from '../types';
 
 export interface CreateDocumentData {
     studentId: string;
@@ -22,19 +21,11 @@ export interface DocumentWithDetails extends Document {
     institution?: Institution;
 }
 
-export const documentService = {
-    /**
-     * Créer un nouveau document (avant le minting)
-     * Retourne le document_id qui sera utilisé dans les métadonnées NFT
-     */
-    async create(institutionId: string, data: CreateDocumentData): Promise<{ success: boolean; document?: Document; error?: string }> {
-        if (!isSupabaseConfigured()) {
-            return { success: false, error: 'Supabase non configuré' };
-        }
+const DOCUMENT_WITH_RELATIONS = `*, student:students(*), institution:institutions(*)`;
 
-        try {
-            const supabase = getSupabaseClient();
-            
+export const documentService = {
+    async create(institutionId: string, data: CreateDocumentData): Promise<ServiceResponse<Document>> {
+        return withSupabase(async (supabase) => {
             const { data: document, error } = await supabase
                 .from('documents')
                 .insert({
@@ -47,35 +38,22 @@ export const documentService = {
                     ipfs_hash: data.ipfsHash || null,
                     ipfs_url: data.ipfsUrl || null,
                     status: 'draft',
-                    document_code: '', // Auto-généré par trigger
-                    document_id: '', // Auto-généré par trigger
+                    document_code: '',
+                    document_id: '',
                 })
                 .select()
                 .single();
 
             if (error) throw error;
-
-            return { success: true, document };
-        } catch (error: any) {
-            console.error('Erreur création document:', error);
-            return { success: false, error: error.message };
-        }
+            return document;
+        }, 'création document');
     },
 
-    /**
-     * Mettre à jour le document après le minting réussi
-     */
     async updateAfterMint(
         documentId: string, 
         mintData: { txHash: string; assetId: string; policyId: string; assetName: string }
-    ): Promise<{ success: boolean; error?: string }> {
-        if (!isSupabaseConfigured()) {
-            return { success: false, error: 'Supabase non configuré' };
-        }
-
-        try {
-            const supabase = getSupabaseClient();
-            
+    ): Promise<ServiceResponse<void>> {
+        return withSupabase(async (supabase) => {
             const { error } = await supabase
                 .from('documents')
                 .update({
@@ -88,148 +66,63 @@ export const documentService = {
                 .eq('id', documentId);
 
             if (error) throw error;
-
-            return { success: true };
-        } catch (error: any) {
-            console.error('Erreur mise à jour document:', error);
-            return { success: false, error: error.message };
-        }
+        }, 'mise à jour document après mint');
     },
 
-    /**
-     * Récupérer un document par son ID
-     */
-    async getById(id: string): Promise<{ success: boolean; document?: DocumentWithDetails; error?: string }> {
-        if (!isSupabaseConfigured()) {
-            return { success: false, error: 'Supabase non configuré' };
-        }
-
-        try {
-            const supabase = getSupabaseClient();
-            
+    async getById(id: string): Promise<ServiceResponse<DocumentWithDetails>> {
+        return withSupabase(async (supabase) => {
             const { data, error } = await supabase
                 .from('documents')
-                .select(`
-                    *,
-                    student:students(*),
-                    institution:institutions(*)
-                `)
+                .select(DOCUMENT_WITH_RELATIONS)
                 .eq('id', id)
                 .single();
 
             if (error) throw error;
-
-            return { success: true, document: data as DocumentWithDetails };
-        } catch (error: any) {
-            console.error('Erreur récupération document:', error);
-            return { success: false, error: error.message };
-        }
+            return data as DocumentWithDetails;
+        }, 'récupération document');
     },
 
-    /**
-     * Récupérer un document par son document_id (utilisé pour la vérification)
-     */
-    async getByDocumentId(documentId: string): Promise<{ success: boolean; document?: DocumentWithDetails; error?: string }> {
-        if (!isSupabaseConfigured()) {
-            return { success: false, error: 'Supabase non configuré' };
-        }
-
-        try {
-            const supabase = getSupabaseClient();
-            
+    async getByDocumentId(documentId: string): Promise<ServiceResponse<DocumentWithDetails>> {
+        return withSupabase(async (supabase) => {
             const { data, error } = await supabase
                 .from('documents')
-                .select(`
-                    *,
-                    student:students(*),
-                    institution:institutions(*)
-                `)
+                .select(DOCUMENT_WITH_RELATIONS)
                 .eq('document_id', documentId)
                 .single();
 
             if (error) throw error;
-
-            return { success: true, document: data as DocumentWithDetails };
-        } catch (error: any) {
-            console.error('Erreur récupération document:', error);
-            return { success: false, error: error.message };
-        }
+            return data as DocumentWithDetails;
+        }, 'récupération document par ID');
     },
 
-    /**
-     * Récupérer un document par son asset_id (blockchain)
-     */
-    async getByAssetId(assetId: string): Promise<{ success: boolean; document?: DocumentWithDetails; error?: string }> {
-        if (!isSupabaseConfigured()) {
-            return { success: false, error: 'Supabase non configuré' };
-        }
-
-        try {
-            const supabase = getSupabaseClient();
-            
+    async getByAssetId(assetId: string): Promise<ServiceResponse<DocumentWithDetails>> {
+        return withSupabase(async (supabase) => {
             const { data, error } = await supabase
                 .from('documents')
-                .select(`
-                    *,
-                    student:students(*),
-                    institution:institutions(*)
-                `)
+                .select(DOCUMENT_WITH_RELATIONS)
                 .eq('asset_id', assetId)
                 .single();
 
             if (error) throw error;
-
-            return { success: true, document: data as DocumentWithDetails };
-        } catch (error: any) {
-            console.error('Erreur récupération document:', error);
-            return { success: false, error: error.message };
-        }
+            return data as DocumentWithDetails;
+        }, 'récupération document par asset ID');
     },
 
-    /**
-     * Récupérer tous les documents d'une institution
-     */
-    async getByInstitution(institutionId: string): Promise<{ success: boolean; documents?: DocumentWithDetails[]; error?: string }> {
-        if (!isSupabaseConfigured()) {
-            return { success: false, error: 'Supabase non configuré' };
-        }
-
-        try {
-            const supabase = getSupabaseClient();
-            
+    async getByInstitution(institutionId: string): Promise<ServiceResponse<DocumentWithDetails[]>> {
+        return withSupabase(async (supabase) => {
             const { data, error } = await supabase
                 .from('documents')
-                .select(`
-                    *,
-                    student:students(*)
-                `)
+                .select(`*, student:students(*)`)
                 .eq('institution_id', institutionId)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
-
-            return { success: true, documents: data as DocumentWithDetails[] };
-        } catch (error: any) {
-            console.error('Erreur récupération documents:', error);
-            return { success: false, error: error.message };
-        }
+            return (data || []) as DocumentWithDetails[];
+        }, 'récupération documents');
     },
 
-    /**
-     * Récupérer les statistiques des documents d'une institution
-     */
-    async getStats(institutionId: string): Promise<{ 
-        success: boolean; 
-        stats?: { total: number; issued: number; draft: number; revoked: number }; 
-        error?: string 
-    }> {
-        if (!isSupabaseConfigured()) {
-            return { success: false, error: 'Supabase non configuré' };
-        }
-
-        try {
-            const supabase = getSupabaseClient();
-            
+    async getStats(institutionId: string): Promise<ServiceResponse<{ total: number; issued: number; draft: number; revoked: number }>> {
+        return withSupabase(async (supabase) => {
             const { data, error } = await supabase
                 .from('documents')
                 .select('status')
@@ -237,32 +130,18 @@ export const documentService = {
 
             if (error) throw error;
 
-            const docs = data as Array<{ status: string }> || [];
-            const stats = {
+            const docs = data || [];
+            return {
                 total: docs.length,
-                issued: docs.filter(d => d.status === 'issued').length,
-                draft: docs.filter(d => d.status === 'draft').length,
-                revoked: docs.filter(d => d.status === 'revoked').length,
+                issued: docs.filter((d: { status: string }) => d.status === 'issued').length,
+                draft: docs.filter((d: { status: string }) => d.status === 'draft').length,
+                revoked: docs.filter((d: { status: string }) => d.status === 'revoked').length,
             };
-
-            return { success: true, stats };
-        } catch (error: any) {
-            console.error('Erreur récupération stats:', error);
-            return { success: false, error: error.message };
-        }
+        }, 'stats documents');
     },
 
-    /**
-     * Révoquer un document
-     */
-    async revoke(documentId: string, reason: string, revokedBy: string): Promise<{ success: boolean; error?: string }> {
-        if (!isSupabaseConfigured()) {
-            return { success: false, error: 'Supabase non configuré' };
-        }
-
-        try {
-            const supabase = getSupabaseClient();
-            
+    async revoke(documentId: string, reason: string, revokedBy: string): Promise<ServiceResponse<void>> {
+        return withSupabase(async (supabase) => {
             const { error } = await supabase
                 .from('documents')
                 .update({
@@ -274,11 +153,6 @@ export const documentService = {
                 .eq('id', documentId);
 
             if (error) throw error;
-
-            return { success: true };
-        } catch (error: any) {
-            console.error('Erreur révocation document:', error);
-            return { success: false, error: error.message };
-        }
+        }, 'révocation document');
     },
 };

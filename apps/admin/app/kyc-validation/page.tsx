@@ -59,27 +59,44 @@ export default function KYCValidationPage() {
         setLoading(false);
     };
 
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
     const handleApprove = async (id: string) => {
+        if (!confirm('Êtes-vous sûr de vouloir approuver cette institution ?')) return;
+        
         setActionLoading(id);
+        setError(null);
+        setSuccessMessage(null);
+        
         const result = await adminService.approveKYC(id);
         if (result.success) {
             setRequests(prev => prev.filter(r => r.id !== id));
+            setSuccessMessage('Institution approuvée avec succès !');
+            setTimeout(() => setSuccessMessage(null), 3000);
         } else {
-            alert(result.error || 'Erreur lors de l\'approbation');
+            setError(result.error || 'Erreur lors de l\'approbation');
         }
         setActionLoading(null);
     };
 
     const handleReject = async (id: string) => {
-        const reason = prompt('Raison du rejet :');
-        if (!reason) return;
+        const reason = prompt('Raison du rejet (obligatoire) :');
+        if (!reason || reason.trim() === '') {
+            alert('Veuillez fournir une raison pour le rejet');
+            return;
+        }
         
         setActionLoading(id);
+        setError(null);
+        setSuccessMessage(null);
+        
         const result = await adminService.rejectKYC(id, reason);
         if (result.success) {
             setRequests(prev => prev.filter(r => r.id !== id));
+            setSuccessMessage('Institution rejetée.');
+            setTimeout(() => setSuccessMessage(null), 3000);
         } else {
-            alert(result.error || 'Erreur lors du rejet');
+            setError(result.error || 'Erreur lors du rejet');
         }
         setActionLoading(null);
     };
@@ -104,9 +121,18 @@ export default function KYCValidationPage() {
                 </div>
             )}
 
+            {/* Success */}
+            {successMessage && (
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 text-green-700 dark:text-green-400 flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5" />
+                    {successMessage}
+                </div>
+            )}
+
             {/* Error */}
             {error && (
-                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 text-red-700 dark:text-red-400">
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 text-red-700 dark:text-red-400 flex items-center gap-2">
+                    <XCircle className="w-5 h-5" />
                     {error}
                 </div>
             )}

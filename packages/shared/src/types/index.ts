@@ -1,122 +1,32 @@
 /**
- * PROOFCHAIN - Shared Types
- * Types communs à toutes les applications
+ * PROOFCHAIN - Types
+ * Re-export de tous les types
  */
 
-// User & Auth
-export interface User {
-    id: string;
-    email: string;
-    name: string;
-    role: 'admin' | 'issuer' | 'verifier';
-    institutionId?: string;
-    createdAt: Date;
-}
+// Database types (Supabase)
+export type {
+    Database,
+    Institution,
+    Student,
+    Document,
+    Country,
+    VerificationLog,
+    ImportLog,
+    SubscriptionPlanData,
+    AdminLog,
+    InstitutionType,
+    KYCStatus,
+    DocumentStatus,
+    SubscriptionPlan,
+    CurrencyType,
+    Json,
+} from './database.types';
 
-// Institution
-export interface Institution {
-    id: string;
-    name: string;
-    email: string;
-    phone: string;
-    website: string;
-    country: string;
-    address: string;
-    logo?: string;
-    status: 'pending' | 'approved' | 'rejected' | 'suspended';
-    kycStatus: 'pending' | 'approved' | 'rejected';
-    subscriptionPlan: 'free' | 'basic' | 'premium' | 'enterprise';
-    createdAt: Date;
-}
-
-// Diploma/Credential
-export interface Diploma {
-    id: string;
-    assetId: string;
-    policyId: string;
-    studentName: string;
-    studentId: string;
-    degree: string;
-    field: string;
-    institutionId: string;
-    institutionName: string;
-    issueDate: Date;
-    graduationDate: Date;
-    ipfsHash: string;
-    txHash: string;
-    verified: boolean;
-    metadata: DiplomaMetadata;
-}
-
-export interface DiplomaMetadata {
-    name: string;
-    image: string;
-    description: string;
-    student: string;
-    degree: string;
-    institution: string;
-    date: string;
-    [key: string]: any;
-}
-
-// Subscription
-export interface SubscriptionPlan {
-    id: string;
-    name: string;
-    priceUSD: number;
-    priceCDF: number;
-    features: string[];
-    maxDiplomas: number;
-    maxStudents: number;
-    support: 'email' | 'priority' | '24/7';
-}
-
-// KYC Request
-export interface KYCRequest {
-    id: string;
-    institutionId: string;
-    institutionName: string;
-    documents: KYCDocument[];
-    status: 'pending' | 'approved' | 'rejected';
-    submittedAt: Date;
-    reviewedAt?: Date;
-    reviewedBy?: string;
-    notes?: string;
-}
-
-export interface KYCDocument {
-    type: 'registration' | 'tax' | 'address' | 'identity';
-    url: string;
-    name: string;
-}
-
-// Notification
-export interface Notification {
-    id: string;
-    type: 'success' | 'warning' | 'error' | 'info';
-    title: string;
-    message: string;
-    read: boolean;
-    createdAt: Date;
-    actionUrl?: string;
-}
-
-// Statistics
-export interface Stats {
-    totalDiplomas: number;
-    totalStudents: number;
-    totalInstitutions: number;
-    totalVerifications: number;
-    monthlyRevenue: number;
-    pendingKYC: number;
-}
-
-// API Response
-export interface ApiResponse<T = any> {
+// Service Response
+export interface ServiceResponse<T = unknown> {
     success: boolean;
     data?: T;
     error?: string;
-    message?: string;
 }
 
 // Pagination
@@ -134,4 +44,62 @@ export interface FormState<T> {
     errors: Partial<Record<keyof T, string>>;
     isSubmitting: boolean;
     isValid: boolean;
+}
+
+// Auth User (from Supabase Auth)
+export interface AuthUser {
+    id: string;
+    email: string;
+    role?: 'admin' | 'issuer' | 'verifier';
+    institutionId?: string;
+}
+
+// Dashboard Stats
+export interface DashboardStats {
+    documentsIssued: number;
+    studentsCount: number;
+    documentsVerified: number;
+    documentsPending: number;
+}
+
+// Global Stats (Admin)
+export interface GlobalStats {
+    totalInstitutions: number;
+    totalStudents: number;
+    totalDiplomas: number;
+    totalVerifications: number;
+    pendingKYC: number;
+}
+
+// Activity Item
+export interface ActivityItem {
+    id: string;
+    type: 'document_issued' | 'student_added' | 'verification' | 'kyc_approved' | 'kyc_rejected';
+    description: string;
+    createdAt: string;
+}
+
+// Notification
+export interface Notification {
+    id: string;
+    type: 'success' | 'warning' | 'error' | 'info';
+    title: string;
+    message: string;
+    read: boolean;
+    createdAt: string;
+    actionUrl?: string;
+}
+
+// NFT Metadata (CIP-25)
+export interface NFTMetadata {
+    name: string;
+    image: string;
+    description: string;
+    documentId: string;
+    student: string;
+    degree: string;
+    field: string;
+    institution: string;
+    issueDate: string;
+    graduationDate: string;
 }

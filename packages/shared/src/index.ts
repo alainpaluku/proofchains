@@ -1,25 +1,73 @@
 /**
- * PROOFCHAIN - Shared Package Index
- * Export all shared utilities, hooks, types, and services
+ * PROOFCHAIN - Shared Package
+ * Exports centralisés pour toutes les applications
  */
 
-// Types
-export * from './types';
-export type { 
-    InstitutionType, 
-    KYCStatus, 
-    DocumentStatus, 
-    SubscriptionPlan as DBSubscriptionPlan,
-    Institution as DBInstitution,
+// ============================================================================
+// TYPES
+// ============================================================================
+export type {
+    // Database types
+    Database,
+    Institution,
     Student,
     Document,
-    Database
-} from './types/database.types';
+    Country,
+    VerificationLog,
+    ImportLog,
+    SubscriptionPlanData,
+    AdminLog,
+    InstitutionType,
+    KYCStatus,
+    DocumentStatus,
+    SubscriptionPlan,
+    CurrencyType,
+    Json,
+    // App types
+    ServiceResponse,
+    PaginatedResponse,
+    FormState,
+    AuthUser,
+    DashboardStats,
+    GlobalStats,
+    ActivityItem,
+    Notification,
+    NFTMetadata,
+} from './types';
 
-// Contexts
-export { AppProvider, useApp } from './contexts/AppContext';
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+export {
+    ADMIN_EMAIL,
+    INSTITUTION_TYPES,
+    KYC_STATUS,
+    DOCUMENT_STATUS,
+    SUBSCRIPTION_PLANS,
+    CARDANO_NETWORKS,
+    IPFS_GATEWAYS,
+    LIMITS,
+    DATE_FORMATS,
+} from './constants';
 
-// Hooks
+// ============================================================================
+// SERVICES
+// ============================================================================
+export { documentService } from './services/document.service';
+export { studentService } from './services/student.service';
+export { issuerService } from './services/issuer.service';
+export { adminService } from './services/admin.service';
+export { statsService } from './services/stats.service';
+
+// Service types
+export type { KYCPendingRequest } from './services/admin.service';
+export type { CreateStudentData, UpdateStudentData } from './services/student.service';
+export type { CreateDocumentData, DocumentWithDetails } from './services/document.service';
+export type { KYCSubmissionData, UpdateInstitutionData } from './services/issuer.service';
+
+// ============================================================================
+// HOOKS
+// ============================================================================
 export { useAsync } from './hooks/useAsync';
 export { useForm } from './hooks/useForm';
 export { usePagination } from './hooks/usePagination';
@@ -28,24 +76,21 @@ export { useDebounce } from './hooks/useDebounce';
 export { useDebounceCallback } from './hooks/useDebounceCallback';
 export { useMediaQuery, useIsMobile, useIsTablet, useIsDesktop, useIsDarkMode } from './hooks/useMediaQuery';
 
-// Services
-export { api } from './services/api';
-export { diplomaService } from './services/diploma.service';
-export { institutionService } from './services/institution.service';
-export { statsService } from './services/stats.service';
-export { documentService } from './services/document.service';
-export { studentService } from './services/student.service';
-export { issuerService } from './services/issuer.service';
-export { adminService } from './services/admin.service';
-export type { KYCPendingRequest } from './services/admin.service';
+// ============================================================================
+// CONTEXTS
+// ============================================================================
+export { AppProvider, useApp } from './contexts/AppContext';
 
-// Utils
-export * from './utils/format';
-export * from './utils/validation';
-
-// Auth
+// ============================================================================
+// COMPONENTS
+// ============================================================================
 export { AuthProvider, useAuth } from './components/AuthProvider';
-export { AuthWrapper, type AuthWrapperProps } from './components/AuthWrapper';
+export { AuthWrapper } from './components/AuthWrapper';
+export type { AuthWrapperProps } from './components/AuthWrapper';
+
+// ============================================================================
+// AUTH
+// ============================================================================
 export { 
     signUp, 
     signInWithEmail, 
@@ -55,9 +100,31 @@ export {
     getCurrentUser,
     onAuthStateChange,
     isAdminEmail,
-    ADMIN_EMAIL
 } from './lib/auth';
-export type { AuthUser, AuthError } from './lib/auth';
+export type { AuthError } from './lib/auth';
 
-// Supabase
-export { getSupabaseClient, supabase, isSupabaseConfigured, createServerSupabaseClient } from './lib/supabase';
+// ============================================================================
+// SUPABASE
+// ============================================================================
+export { 
+    getSupabaseClient, 
+    supabase, 
+    isSupabaseConfigured, 
+    createServerSupabaseClient 
+} from './lib/supabase';
+
+// ============================================================================
+// UTILS
+// ============================================================================
+export {
+    formatDate,
+    formatDateTime,
+    formatRelativeTime,
+    formatCurrency,
+    formatNumber,
+    truncateAddress,
+    truncateText,
+    formatFileSize,
+} from './utils/format';
+
+export { validators, composeValidators } from './utils/validation';

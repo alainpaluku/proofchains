@@ -13,7 +13,8 @@ const PINATA_API_URL = 'https://api.pinata.cloud';
 export async function POST(request: NextRequest) {
     try {
         // Get JWT from environment (server-side only)
-        const jwt = process.env.PINATA_JWT || process.env.NEXT_PUBLIC_PINATA_JWT;
+        // Use .trim() to remove any whitespace/newline characters that could cause header errors
+        const jwt = (process.env.PINATA_JWT || process.env.NEXT_PUBLIC_PINATA_JWT)?.trim();
 
         if (!jwt) {
             console.error('❌ PINATA_JWT not found in environment');
