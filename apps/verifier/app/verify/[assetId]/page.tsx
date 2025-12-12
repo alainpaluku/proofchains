@@ -302,7 +302,7 @@ export default function VerifyPage() {
                                     <div>
                                         <p className="text-gray-500 dark:text-gray-400">Hash de transaction</p>
                                         <a
-                                            href={`${explorerUrl}/tx/${verification.document.txHash || verification.blockchain?.txHash}`}
+                                            href={`${explorerUrl}/transaction/${verification.document.txHash || verification.blockchain?.txHash}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="flex items-center gap-2 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 font-mono break-all"

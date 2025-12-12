@@ -289,7 +289,7 @@ export default function MintPage() {
                                             Transaction Hash:
                                         </p>
                                         <a
-                                            href={`${explorerUrl}/tx/${mintResult.txHash}`}
+                                            href={`${explorerUrl}/transaction/${mintResult.txHash}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="text-purple-600 hover:text-purple-700 font-mono text-sm flex items-center gap-2"

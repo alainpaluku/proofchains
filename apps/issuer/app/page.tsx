@@ -186,7 +186,7 @@ export default function HomePage() {
                                             </a>
                                             {doc.tx_hash && (
                                                 <a
-                                                    href={`${explorerUrl}/tx/${doc.tx_hash}`}
+                                                    href={`${explorerUrl}/transaction/${doc.tx_hash}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="p-2 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
