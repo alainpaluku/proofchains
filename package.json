@@ -16,7 +16,17 @@
     "issuer:dev": "npm run dev --workspace=apps/issuer",
     "admin:dev": "npm run dev --workspace=apps/admin",
     "landing:dev": "npm run dev --workspace=apps/landing",
-    "api:dev": "npm run dev --workspace=api/hono-api"
+    "api:dev": "npm run dev --workspace=api/hono-api",
+    "deploy": "powershell -ExecutionPolicy Bypass -File scripts/deploy.ps1",
+    "deploy:prod": "powershell -ExecutionPolicy Bypass -File scripts/deploy.ps1 -Production",
+    "deploy:landing": "powershell -ExecutionPolicy Bypass -File scripts/deploy.ps1 -App landing",
+    "deploy:issuer": "powershell -ExecutionPolicy Bypass -File scripts/deploy.ps1 -App issuer",
+    "deploy:verifier": "powershell -ExecutionPolicy Bypass -File scripts/deploy.ps1 -App verifier",
+    "deploy:admin": "powershell -ExecutionPolicy Bypass -File scripts/deploy.ps1 -App admin",
+    "deploy:landing:prod": "powershell -ExecutionPolicy Bypass -File scripts/deploy.ps1 -App landing -Production",
+    "deploy:issuer:prod": "powershell -ExecutionPolicy Bypass -File scripts/deploy.ps1 -App issuer -Production",
+    "deploy:verifier:prod": "powershell -ExecutionPolicy Bypass -File scripts/deploy.ps1 -App verifier -Production",
+    "deploy:admin:prod": "powershell -ExecutionPolicy Bypass -File scripts/deploy.ps1 -App admin -Production"
   },
   "devDependencies": {
     "buffer": "6.0.3",
