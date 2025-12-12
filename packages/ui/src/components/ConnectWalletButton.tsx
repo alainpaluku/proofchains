@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
-import { Wallet, LogOut, AlertCircle } from 'lucide-react';
-import { useWallet } from '../hooks/useWallet';
+import React, { useState } from 'react';
+import { Wallet, LogOut, ChevronDown } from 'lucide-react';
+import { useWallet, WalletType } from '../hooks/useWallet';
+import { WalletSelector } from './WalletSelector';
 
 interface ConnectWalletButtonProps {
     className?: string;
@@ -11,14 +12,34 @@ interface ConnectWalletButtonProps {
     showBalance?: boolean;
 }
 
+// Wallet type display names
+const walletNames: Record<string, string> = {
+    eternl: 'Eternl',
+    'eternl-mobile': 'Eternl',
+    lace: 'Lace',
+    nami: 'Nami',
+};
+
 export function ConnectWalletButton({
     className = '',
     variant = 'primary',
     size = 'md',
     showBalance = true,
 }: ConnectWalletButtonProps) {
-    const { connected, address, balance, connect, disconnect, isLoading, error, isNamiInstalled, isLaceInstalled } = useWallet();
-    const [mounted, setMounted] = React.useState(false);
+    const { 
+        connected, 
+        address, 
+        balance, 
+        walletType,
+        connect, 
+        disconnect, 
+        isLoading, 
+        error,
+        availableWallets,
+    } = useWallet();
+    
+    const [mounted, setMounted] = useState(false);
+    const [showSelector, setShowSelector] = useState(false);
 
     React.useEffect(() => { setMounted(true); }, []);
 
@@ -34,8 +55,13 @@ export function ConnectWalletButton({
         outline: 'border-2 border-purple-600 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20',
     };
 
-    const handleClick = () => {
-        if (connected) { disconnect(); } else { connect(); }
+    const handleConnect = () => {
+        setShowSelector(true);
+    };
+
+    const handleWalletSelect = async (walletType: WalletType) => {
+        setShowSelector(false);
+        await connect(walletType);
     };
 
     if (!mounted) {
@@ -49,50 +75,91 @@ export function ConnectWalletButton({
         );
     }
 
-    if (!isNamiInstalled && !isLaceInstalled) {
+    // Check if any wallet is available
+    const hasAvailableWallet = availableWallets.some(w => w.installed || w.isMobile);
+
+    if (!hasAvailableWallet) {
         return (
             <div className={`flex items-center gap-2 ${className}`}>
-                <a href="https://www.lace.io/" target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 rounded-lg font-medium transition-all ${sizeClasses[size]} ${variantClasses[variant]}`}>
-                    <AlertCircle className="w-4 h-4" />
-                    Installer Lace Wallet
-                </a>
+                <button 
+                    onClick={handleConnect}
+                    className={`flex items-center gap-2 rounded-lg font-medium transition-all ${sizeClasses[size]} ${variantClasses[variant]}`}
+                >
+                    <Wallet className="w-4 h-4" />
+                    Installer un portefeuille
+                </button>
+                <WalletSelector 
+                    isOpen={showSelector} 
+                    onClose={() => setShowSelector(false)}
+                    onConnect={handleWalletSelect}
+                />
             </div>
         );
     }
 
     return (
-        <div className={`flex items-center gap-2 ${className}`}>
-            {connected && showBalance && balance && (
-                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{balance} ₳</span>
-                </div>
-            )}
-
-            <button onClick={handleClick} disabled={isLoading} className={`flex items-center gap-2 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed ${sizeClasses[size]} ${variantClasses[variant]} ${className}`}>
-                {isLoading ? (
-                    <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Chargement...
-                    </>
-                ) : connected ? (
-                    <>
-                        <LogOut className="w-4 h-4" />
-                        <span className="hidden sm:inline">Déconnecter</span>
-                        <span className="sm:hidden">{address?.slice(0, 6)}...{address?.slice(-4)}</span>
-                    </>
-                ) : (
-                    <>
-                        <Wallet className="w-4 h-4" />
-                        Connecter le portefeuille
-                    </>
+        <>
+            <div className={`flex items-center gap-2 ${className}`}>
+                {connected && showBalance && balance && (
+                    <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{balance} ₳</span>
+                    </div>
                 )}
-            </button>
+
+                {connected ? (
+                    <div className="flex items-center gap-1">
+                        {/* Wallet info badge */}
+                        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 rounded-l-lg border-r border-green-200 dark:border-green-800">
+                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                            <span className="text-sm font-medium text-green-700 dark:text-green-400">
+                                {walletType ? walletNames[walletType] : 'Connecté'}
+                            </span>
+                        </div>
+                        
+                        {/* Disconnect button */}
+                        <button 
+                            onClick={disconnect} 
+                            disabled={isLoading} 
+                            className={`flex items-center gap-2 rounded-lg sm:rounded-l-none font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed ${sizeClasses[size]} bg-red-500 hover:bg-red-600 text-white`}
+                        >
+                            <LogOut className="w-4 h-4" />
+                            <span className="hidden sm:inline">Déconnecter</span>
+                            <span className="sm:hidden">{address?.slice(0, 6)}...{address?.slice(-4)}</span>
+                        </button>
+                    </div>
+                ) : (
+                    <button 
+                        onClick={handleConnect} 
+                        disabled={isLoading} 
+                        className={`flex items-center gap-2 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed ${sizeClasses[size]} ${variantClasses[variant]}`}
+                    >
+                        {isLoading ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                Connexion...
+                            </>
+                        ) : (
+                            <>
+                                <Wallet className="w-4 h-4" />
+                                Connecter
+                                <ChevronDown className="w-4 h-4" />
+                            </>
+                        )}
+                    </button>
+                )}
+            </div>
 
             {error && (
-                <div className="absolute top-full mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400 max-w-xs">
+                <div className="fixed bottom-4 right-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400 max-w-xs shadow-lg z-50">
                     {error}
                 </div>
             )}
-        </div>
+
+            <WalletSelector 
+                isOpen={showSelector} 
+                onClose={() => setShowSelector(false)}
+                onConnect={handleWalletSelect}
+            />
+        </>
     );
 }

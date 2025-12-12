@@ -4,6 +4,7 @@
 
 // Components
 export { ConnectWalletButton } from './components/ConnectWalletButton';
+export { WalletSelector } from './components/WalletSelector';
 export { InstitutionCard } from './components/InstitutionCard';
 export { Sidebar } from './components/Sidebar';
 export { ThemeToggle } from './components/ThemeToggle';
@@ -39,9 +40,10 @@ export * from './lib/storage';
 
 // Assets
 export { ProofchainLogoSVG } from './assets/ProofchainLogo';
+export { EternlIcon, EternlMobileIcon, LaceIcon, NamiIcon, WalletIconMap } from './assets/WalletIcons';
 
 // Types
-export type { WalletState } from './hooks/useWallet';
+export type { WalletState, WalletType, WalletInfo } from './hooks/useWallet';
 export type { Theme } from './hooks/useTheme';
 export type { SidebarItem } from './components/Sidebar';
 export type { Notification } from './components/NotificationButton';
