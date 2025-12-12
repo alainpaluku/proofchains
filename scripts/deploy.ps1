@@ -6,13 +6,13 @@ param(
     [switch]$Production = $false
 )
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 
 # Configuration des apps
 $Apps = @{
     "landing" = @{
         Path = "apps/landing"
-        Name = "proofchain-landing"
+        Name = "proofchains"
     }
     "issuer" = @{
         Path = "apps/issuer"
@@ -51,47 +51,47 @@ function Deploy-App {
     Write-Host "  Path: $appPath" -ForegroundColor Gray
     Write-Host "  Project: $projectName" -ForegroundColor Gray
     
-    # Créer vercel.json temporaire pour l'app
-    $vercelConfig = @{
-        "`$schema" = "https://openapi.vercel.sh/vercel.json"
-        "framework" = "nextjs"
-    } | ConvertTo-Json
-    
-    # Déployer
-    $prodFlag = if ($IsProd) { "--prod" } else { "" }
-    
     try {
         Push-Location $appPath
         
         # Vérifier si le projet existe, sinon le créer
         if (-not (Test-Path ".vercel/project.json")) {
-            Write-Host "  Creating new Vercel project..." -ForegroundColor Yellow
-            vercel link --yes 2>&1 | Out-Null
+            Write-Host "  Linking Vercel project..." -ForegroundColor Yellow
+            $linkResult = vercel link --yes 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "  Warning: Link may have issues" -ForegroundColor Yellow
+            }
         }
         
         Write-Host "  Deploying..." -ForegroundColor Yellow
         
+        # Déployer avec --yes pour éviter les prompts
         if ($IsProd) {
-            $result = vercel --prod 2>&1
+            $result = vercel --prod --yes 2>&1
         } else {
-            $result = vercel 2>&1
+            $result = vercel --yes 2>&1
         }
         
-        # Extraire l'URL
-        $url = $result | Select-String -Pattern "https://.*\.vercel\.app" | Select-Object -First 1
+        # Vérifier le résultat
+        $resultStr = $result -join "`n"
         
-        if ($url) {
-            Write-Host "  ✅ Deployed: $($url.Matches.Value)" -ForegroundColor Green
+        if ($resultStr -match "https://[^\s]+\.vercel\.app") {
+            $url = $Matches[0]
+            Write-Host "  Deployed: $url" -ForegroundColor Green
+            Pop-Location
+            return $true
+        } elseif ($resultStr -match "Error") {
+            Write-Host "  Error: $resultStr" -ForegroundColor Red
+            Pop-Location
+            return $false
         } else {
-            Write-Host "  ✅ Deployed successfully" -ForegroundColor Green
-            Write-Host $result
+            Write-Host "  Result: $resultStr" -ForegroundColor Yellow
+            Pop-Location
+            return $true
         }
-        
-        Pop-Location
-        return $true
     }
     catch {
-        Write-Host "  ❌ Failed: $_" -ForegroundColor Red
+        Write-Host "  Failed: $_" -ForegroundColor Red
         Pop-Location
         return $false
     }
@@ -99,21 +99,22 @@ function Deploy-App {
 
 # Main
 Write-Host ""
-Write-Host "╔══════════════════════════════════════╗" -ForegroundColor Magenta
-Write-Host "║   PROOFCHAIN - Vercel Deployment     ║" -ForegroundColor Magenta
-Write-Host "╚══════════════════════════════════════╝" -ForegroundColor Magenta
+Write-Host "========================================" -ForegroundColor Magenta
+Write-Host "   PROOFCHAIN - Vercel Deployment" -ForegroundColor Magenta
+Write-Host "========================================" -ForegroundColor Magenta
 
 $mode = if ($Production) { "PRODUCTION" } else { "PREVIEW" }
 Write-Host "Mode: $mode" -ForegroundColor Yellow
+Write-Host ""
 
 # Build d'abord
 Write-Header "Building all apps"
 npm run build
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ Build failed!" -ForegroundColor Red
+    Write-Host "Build failed!" -ForegroundColor Red
     exit 1
 }
-Write-Host "✅ Build successful" -ForegroundColor Green
+Write-Host "Build successful" -ForegroundColor Green
 
 # Déployer
 $results = @{}
@@ -126,7 +127,7 @@ if ($App -eq "all") {
     if ($Apps.ContainsKey($App)) {
         $results[$App] = Deploy-App -AppName $App -Config $Apps[$App] -IsProd $Production
     } else {
-        Write-Host "❌ Unknown app: $App" -ForegroundColor Red
+        Write-Host "Unknown app: $App" -ForegroundColor Red
         Write-Host "Available apps: $($Apps.Keys -join ', ')" -ForegroundColor Yellow
         exit 1
     }
@@ -135,16 +136,17 @@ if ($App -eq "all") {
 # Résumé
 Write-Header "Deployment Summary"
 foreach ($appName in $results.Keys) {
-    $status = if ($results[$appName]) { "✅" } else { "❌" }
-    Write-Host "  $status $appName"
+    $status = if ($results[$appName]) { "[OK]" } else { "[FAIL]" }
+    $color = if ($results[$appName]) { "Green" } else { "Red" }
+    Write-Host "  $status $appName" -ForegroundColor $color
 }
 
 $failed = ($results.Values | Where-Object { -not $_ }).Count
 if ($failed -gt 0) {
     Write-Host ""
-    Write-Host "⚠️  $failed deployment(s) failed" -ForegroundColor Yellow
+    Write-Host "$failed deployment(s) failed" -ForegroundColor Yellow
     exit 1
 } else {
     Write-Host ""
-    Write-Host "🎉 All deployments successful!" -ForegroundColor Green
+    Write-Host "All deployments successful!" -ForegroundColor Green
 }
