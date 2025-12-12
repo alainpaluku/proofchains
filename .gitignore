@@ -51,3 +51,6 @@ pnpm-debug.log*
 # Misc
 *.pem
 *.log
+
+.vercel
+.env*.local
