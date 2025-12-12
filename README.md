@@ -14,7 +14,7 @@
 
 | App | Port | URL | Code |
 |-----|------|-----|------|
-| 🏠 Landing | 3003 | [landing-seven-jade-95.vercel.app](https://landing-seven-jade-95.vercel.app) | [apps/landing](./apps/landing) |
+| 🏠 Landing | 3003 | [landing-rouge-phi.vercel.app](https://landing-rouge-phi.vercel.app/) | [apps/landing](./apps/landing) |
 | ✅ Verifier | 3000 | [proofchain-verifier.vercel.app](https://proofchain-verifier.vercel.app) | [apps/verifier](./apps/verifier) |
 | 🎓 Issuer | 3001 | [proofchain-issuer.vercel.app](https://proofchain-issuer.vercel.app) | [apps/issuer](./apps/issuer) |
 | ⚙️ Admin | 3002 | [proofchain-admin.vercel.app](https://proofchain-admin.vercel.app) | [apps/admin](./apps/admin) |
