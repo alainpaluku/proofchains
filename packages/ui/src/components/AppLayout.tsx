@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { Menu, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Menu, ChevronLeft } from 'lucide-react';
 import { Sidebar, type SidebarItem } from './Sidebar';
 import { NotificationButton } from './NotificationButton';
 import { ThemeToggle } from './ThemeToggle';
@@ -10,7 +10,7 @@ import { UserMenu } from './UserMenu';
 export interface AppLayoutProps {
     children: React.ReactNode;
     menuItems: SidebarItem[];
-    logo: React.ReactNode;
+    logo: React.ReactNode | ((collapsed: boolean) => React.ReactNode);
     additionalHeaderContent?: React.ReactNode;
     showSidebarToggle?: boolean;
     initialSidebarCollapsed?: boolean;
@@ -74,7 +74,7 @@ export function AppLayout({
             >
                 <Sidebar 
                     items={menuItems} 
-                    logo={logo}
+                    logo={typeof logo === 'function' ? logo(isSidebarCollapsed) : logo}
                     collapsed={isSidebarCollapsed}
                 />
             </div>
@@ -89,7 +89,7 @@ export function AppLayout({
                     <div className="fixed inset-y-0 left-0 z-50 md:hidden">
                         <Sidebar 
                             items={menuItems} 
-                            logo={logo}
+                            logo={typeof logo === 'function' ? logo(false) : logo}
                             onClose={closeMobileMenu}
                         />
                     </div>
@@ -112,15 +112,13 @@ export function AppLayout({
                             {showSidebarToggle && (
                                 <button
                                     onClick={toggleSidebar}
-                                    className="hidden md:flex p-2 min-w-[44px] min-h-[44px] rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    className="hidden md:flex items-center justify-center w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-purple-100 dark:hover:bg-purple-900/30 border border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-200 group"
                                     aria-label={isSidebarCollapsed ? 'Ouvrir la sidebar' : 'Fermer la sidebar'}
                                     title={isSidebarCollapsed ? 'Ouvrir la sidebar' : 'Fermer la sidebar'}
                                 >
-                                    {isSidebarCollapsed ? (
-                                        <ChevronRight className="w-6 h-6 text-gray-700 dark:text-gray-300" />
-                                    ) : (
-                                        <ChevronLeft className="w-6 h-6 text-gray-700 dark:text-gray-300" />
-                                    )}
+                                    <div className={`transition-transform duration-200 ${isSidebarCollapsed ? 'rotate-180' : ''}`}>
+                                        <ChevronLeft className="w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-purple-600 dark:group-hover:text-purple-400" />
+                                    </div>
                                 </button>
                             )}
 

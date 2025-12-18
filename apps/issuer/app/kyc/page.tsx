@@ -122,10 +122,10 @@ export default function KYCPage() {
 
     return (
         <div className="p-6 space-y-8 max-w-4xl mx-auto">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                        <FileCheck className="w-8 h-8 text-purple-600" />
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                        <FileCheck className="w-7 h-7 sm:w-8 sm:h-8 text-purple-600" />
                         Vérification KYC
                     </h1>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">Soumettez votre demande de vérification institutionnelle</p>

@@ -250,9 +250,9 @@ export default function MintPage() {
 
     return (
         <div className="p-6 space-y-8 max-w-4xl mx-auto">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
                         Émettre un diplôme
                     </h1>
                     <p className="text-gray-600 dark:text-gray-400">

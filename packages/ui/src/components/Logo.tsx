@@ -29,20 +29,17 @@ export function Logo({
     const sizeConfig = {
         sm: {
             logoSize: 28,
-            title: 'text-lg',
-            subtitle: 'text-[10px]',
+            subtitle: 'text-sm',
             gap: 'gap-2',
         },
         md: {
             logoSize: 36,
-            title: 'text-xl',
-            subtitle: 'text-xs',
+            subtitle: 'text-base',
             gap: 'gap-3',
         },
         lg: {
             logoSize: 48,
-            title: 'text-2xl',
-            subtitle: 'text-sm',
+            subtitle: 'text-lg',
             gap: 'gap-4',
         },
     };
@@ -51,23 +48,16 @@ export function Logo({
 
     const content = (
         <>
-            <div className="group-hover:scale-110 transition-transform flex-shrink-0">
+            <div className="group-hover:scale-105 transition-transform duration-200 flex-shrink-0">
                 <ProofchainLogoSVG 
                     size={config.logoSize} 
                     color="#6ecaff"
                 />
             </div>
-            {!iconOnly && (
-                <div className="min-w-0">
-                    <h1 className={`${config.title} font-bold bg-gradient-to-r from-[#6ecaff] to-blue-500 bg-clip-text text-transparent`}>
-                        PROOFCHAIN
-                    </h1>
-                    {subtitle && (
-                        <p className={`${config.subtitle} text-gray-500 dark:text-gray-400 truncate`}>
-                            {subtitle}
-                        </p>
-                    )}
-                </div>
+            {!iconOnly && subtitle && (
+                <span className={`${config.subtitle} font-semibold text-gray-800 dark:text-white`}>
+                    {subtitle}
+                </span>
             )}
         </>
     );

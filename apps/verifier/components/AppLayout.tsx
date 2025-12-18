@@ -19,7 +19,7 @@ export default function AppLayout({ children }: LayoutProps) {
         <>
             <SharedAppLayout 
                 menuItems={menuItems} 
-                logo={<Logo subtitle="Verifier" />}
+                logo={(collapsed) => <Logo subtitle="Verifier" iconOnly={collapsed} />}
                 showNotifications={false}
             >
                 {children}

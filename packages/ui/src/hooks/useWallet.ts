@@ -1,7 +1,7 @@
 /**
  * PROOFCHAIN - Wallet Connection Hook
  * Manage Nami/Lace/Eternal wallet connection state
- * Supports desktop extensions and mobile via WalletConnect
+ * Supports desktop extensions and mobile via deep links
  */
 
 'use client';
@@ -16,7 +16,7 @@ interface WalletApi {
     submitTx: (tx: string) => Promise<string>;
 }
 
-export type WalletType = 'nami' | 'lace' | 'eternl' | 'eternl-mobile' | null;
+export type WalletType = 'nami' | 'lace' | 'eternl' | 'eternl-mobile' | 'vespr' | 'flint' | null;
 
 export interface WalletState {
     connected: boolean;
@@ -35,6 +35,9 @@ export interface WalletInfo {
     icon: string;
     installed: boolean;
     isMobile?: boolean;
+    deepLink?: string;
+    appStoreUrl?: string;
+    playStoreUrl?: string;
 }
 
 // Helper to get cardano from window
@@ -47,6 +50,25 @@ function getCardano() {
 function isMobileDevice() {
     if (typeof window === 'undefined') return false;
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+// Check if iOS
+function isIOS() {
+    if (typeof window === 'undefined') return false;
+    return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+// Check if Android
+function isAndroid() {
+    if (typeof window === 'undefined') return false;
+    return /Android/i.test(navigator.userAgent);
+}
+
+// Check if in-app browser (wallet browser)
+function isInAppBrowser() {
+    if (typeof window === 'undefined') return false;
+    const ua = navigator.userAgent.toLowerCase();
+    return ua.includes('eternl') || ua.includes('vespr') || ua.includes('flint') || ua.includes('wv');
 }
 
 export function useWallet() {
@@ -69,21 +91,16 @@ export function useWallet() {
         const checkWallets = () => {
             const cardano = getCardano();
             const isMobile = isMobileDevice();
+            const inAppBrowser = isInAppBrowser();
             
-            const wallets: WalletInfo[] = [
+            // Desktop wallets
+            const desktopWallets: WalletInfo[] = [
                 {
                     id: 'eternl',
                     name: 'Eternl',
                     icon: '🔷',
                     installed: !!cardano?.eternl,
                     isMobile: false,
-                },
-                {
-                    id: 'eternl-mobile',
-                    name: 'Eternl Mobile',
-                    icon: '📱',
-                    installed: true, // Always available via deep link
-                    isMobile: true,
                 },
                 {
                     id: 'lace',
@@ -99,21 +116,80 @@ export function useWallet() {
                     installed: !!cardano?.nami,
                     isMobile: false,
                 },
+                {
+                    id: 'flint',
+                    name: 'Flint',
+                    icon: '🔥',
+                    installed: !!cardano?.flint,
+                    isMobile: false,
+                },
             ];
 
-            // Filter based on device type
-            const filteredWallets = isMobile 
-                ? wallets.filter(w => w.isMobile || w.installed)
-                : wallets.filter(w => !w.isMobile || w.installed);
+            // Mobile wallets with deep links
+            const mobileWallets: WalletInfo[] = [
+                {
+                    id: 'eternl-mobile',
+                    name: 'Eternl',
+                    icon: '📱',
+                    installed: true,
+                    isMobile: true,
+                    deepLink: 'eternl://',
+                    appStoreUrl: 'https://apps.apple.com/app/eternl/id1603854498',
+                    playStoreUrl: 'https://play.google.com/store/apps/details?id=io.eternl.app',
+                },
+                {
+                    id: 'vespr',
+                    name: 'VESPR',
+                    icon: '🌟',
+                    installed: true,
+                    isMobile: true,
+                    deepLink: 'vespr://',
+                    appStoreUrl: 'https://apps.apple.com/app/vespr-wallet/id1565749376',
+                    playStoreUrl: 'https://play.google.com/store/apps/details?id=art.nft_craze.gallery.main',
+                },
+            ];
 
-            setAvailableWallets(filteredWallets);
+            let wallets: WalletInfo[];
+
+            // If in wallet's in-app browser, check for injected wallet
+            if (inAppBrowser && cardano) {
+                wallets = desktopWallets.filter(w => w.installed);
+                if (wallets.length === 0) {
+                    // Fallback: try to detect any cardano wallet
+                    const walletKeys = Object.keys(cardano).filter(k => 
+                        typeof cardano[k]?.enable === 'function'
+                    );
+                    if (walletKeys.length > 0) {
+                        wallets = [{
+                            id: walletKeys[0] as WalletType,
+                            name: walletKeys[0].charAt(0).toUpperCase() + walletKeys[0].slice(1),
+                            icon: '💳',
+                            installed: true,
+                            isMobile: false,
+                        }];
+                    }
+                }
+            } else if (isMobile) {
+                // On mobile browser, show mobile wallet options
+                wallets = mobileWallets;
+            } else {
+                // Desktop: show desktop wallets
+                wallets = desktopWallets;
+            }
+
+            setAvailableWallets(wallets);
             setWalletChecked(true);
         };
 
         // Check immediately and after a delay (wallets inject async)
         checkWallets();
         const timeout = setTimeout(checkWallets, 1000);
-        return () => clearTimeout(timeout);
+        // Also check after longer delay for slow wallet injections
+        const timeout2 = setTimeout(checkWallets, 2500);
+        return () => {
+            clearTimeout(timeout);
+            clearTimeout(timeout2);
+        };
     }, []);
 
     // Connect to specific wallet

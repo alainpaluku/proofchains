@@ -99,19 +99,19 @@ export default function StudentsPage() {
 
     return (
         <div className="p-6 space-y-8 max-w-7xl mx-auto">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                        <Users className="w-8 h-8 text-purple-600" />
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                        <Users className="w-7 h-7 sm:w-8 sm:h-8 text-purple-600" />
                         Gestion des étudiants
                     </h1>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">
                         {students.length} étudiant{students.length > 1 ? 's' : ''}
                     </p>
                 </div>
-                <button onClick={() => setShowModal(true)} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl font-medium transition-all shadow-lg">
+                <button onClick={() => setShowModal(true)} className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl font-medium transition-all shadow-lg w-full sm:w-auto">
                     <Plus className="w-5 h-5" />
-                    Ajouter un étudiant
+                    <span className="sm:inline">Ajouter</span>
                 </button>
             </div>
 

@@ -35,7 +35,7 @@ export default function AppLayout({ children }: LayoutProps) {
     return (
         <SharedAppLayout 
             menuItems={menuItems} 
-            logo={<Logo subtitle="Issuer" />}
+            logo={(collapsed) => <Logo subtitle="Issuer" iconOnly={collapsed} />}
             user={user}
             onSignOut={handleSignOut}
             onSettingsClick={handleSettingsClick}
