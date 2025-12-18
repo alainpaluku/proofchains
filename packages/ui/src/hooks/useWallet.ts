@@ -214,28 +214,46 @@ export function useWallet() {
             // Handle Eternl Mobile via deep link
             if (selectedWallet === 'eternl-mobile') {
                 const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
-                const encodedUrl = encodeURIComponent(currentUrl);
                 
-                // Open Eternl mobile app with dApp connector
-                const deepLink = `eternl://dapp?url=${encodedUrl}`;
+                // Eternl mobile deep link format: ouvre le dApp browser avec l'URL
+                // Format: eternl://wc?uri=<url> ou eternl://browser?url=<url>
+                const isIOSDevice = /iPhone|iPad|iPod/i.test(navigator.userAgent);
                 
-                // For iOS, try universal link first
-                const universalLink = `https://eternl.io/app?url=${encodedUrl}`;
+                // Essayer plusieurs formats de deep link
+                let deepLink: string;
                 
-                if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-                    window.location.href = universalLink;
+                if (isIOSDevice) {
+                    // iOS: utiliser le universal link d'Eternl
+                    deepLink = `https://eternl.io/app/browser?url=${encodeURIComponent(currentUrl)}`;
                 } else {
-                    window.location.href = deepLink;
+                    // Android: utiliser le deep link direct
+                    deepLink = `eternl://browser?url=${encodeURIComponent(currentUrl)}`;
                 }
                 
-                // Set a timeout to check if app opened
-                setTimeout(() => {
+                // Ouvrir le deep link
+                window.location.href = deepLink;
+                
+                // Fallback: si l'app ne s'ouvre pas après 2.5s, proposer d'installer
+                const timeout = setTimeout(() => {
+                    // Vérifier si on est toujours sur la même page (l'app ne s'est pas ouverte)
                     setState(prev => ({
                         ...prev,
                         isLoading: false,
-                        error: 'Si Eternl ne s\'est pas ouvert, veuillez installer l\'application.',
+                        error: null,
                     }));
-                }, 3000);
+                    
+                    // Proposer d'ouvrir le store
+                    const storeUrl = isIOSDevice 
+                        ? 'https://apps.apple.com/app/eternl/id1603854498'
+                        : 'https://play.google.com/store/apps/details?id=io.eternl.app';
+                    
+                    if (confirm('Eternl ne s\'est pas ouvert. Voulez-vous l\'installer ?')) {
+                        window.open(storeUrl, '_blank');
+                    }
+                }, 2500);
+                
+                // Nettoyer le timeout si la page change
+                window.addEventListener('blur', () => clearTimeout(timeout), { once: true });
                 
                 return false;
             }
