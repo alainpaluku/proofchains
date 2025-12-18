@@ -164,7 +164,6 @@ NEXT_PUBLIC_ADMIN_URL=https://proofchain-admin.vercel.app
 
 Voir [.gitignore](./.gitignore) - Fichiers exclus de Git :
 - `.env`, `.env.local`
-- `.kiro/`
 - `.vscode/`
 - `node_modules/`
 
