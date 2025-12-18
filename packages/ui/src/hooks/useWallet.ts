@@ -1,7 +1,6 @@
 /**
  * PROOFCHAIN - Wallet Connection Hook
- * Manage Nami/Lace/Eternal wallet connection state
- * Supports desktop extensions and mobile via deep links
+ * Supports Eternl and Lace wallets (desktop + mobile)
  */
 
 'use client';
@@ -10,13 +9,14 @@ import { useState, useEffect, useCallback } from 'react';
 
 interface WalletApi {
     getUsedAddresses: () => Promise<string[]>;
+    getUnusedAddresses?: () => Promise<string[]>;
     getNetworkId: () => Promise<number>;
     getBalance: () => Promise<string>;
     signTx: (tx: string, partialSign?: boolean) => Promise<string>;
     submitTx: (tx: string) => Promise<string>;
 }
 
-export type WalletType = 'nami' | 'lace' | 'eternl' | 'eternl-mobile' | 'vespr' | 'flint' | 'yoroi' | 'yoroi-mobile' | null;
+export type WalletType = 'eternl' | 'eternl-mobile' | 'lace' | null;
 
 export interface WalletState {
     connected: boolean;
@@ -52,29 +52,65 @@ function isMobileDevice() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
+// Check if iOS
+function isIOSDevice() {
+    if (typeof window === 'undefined') return false;
+    return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
 
-
-// Check if in-app browser (wallet browser)
-function isInAppBrowser() {
+// Check if in Eternl's in-app browser
+function isInEternlBrowser() {
     if (typeof window === 'undefined') return false;
     const ua = navigator.userAgent.toLowerCase();
-    return ua.includes('eternl') || ua.includes('vespr') || ua.includes('flint') || ua.includes('yoroi') || ua.includes('wv');
+    // Eternl injecte son wallet même dans le navigateur in-app
+    return ua.includes('eternl') || (isMobileDevice() && getCardano()?.eternl);
 }
 
 // Helper to detect Eternl wallet (handles different property names)
 function getEternlWallet() {
     const cardano = getCardano();
     if (!cardano) return null;
-    // Eternl peut être injecté sous différents noms
+    // Eternl peut être injecté sous 'eternl' ou 'ccvault' (ancien nom)
     return cardano.eternl || cardano.ccvault || null;
 }
 
-// Helper to detect Yoroi wallet
-function getYoroiWallet() {
-    const cardano = getCardano();
-    if (!cardano) return null;
-    return cardano.yoroi || null;
+// Parse CBOR balance to ADA
+function parseCborBalance(balanceCbor: string): number {
+    try {
+        if (balanceCbor.startsWith('1b')) {
+            // Grand entier (8 bytes)
+            return parseInt(balanceCbor.slice(2, 18), 16) / 1_000_000;
+        } else if (balanceCbor.startsWith('1a')) {
+            // Entier 4 bytes
+            return parseInt(balanceCbor.slice(2, 10), 16) / 1_000_000;
+        } else if (balanceCbor.startsWith('19')) {
+            // Entier 2 bytes
+            return parseInt(balanceCbor.slice(2, 6), 16) / 1_000_000;
+        } else if (balanceCbor.startsWith('18')) {
+            // Entier 1 byte
+            return parseInt(balanceCbor.slice(2, 4), 16) / 1_000_000;
+        } else if (balanceCbor.startsWith('82')) {
+            // Tuple [lovelace, assets]
+            const lovelacePart = balanceCbor.slice(2);
+            if (lovelacePart.startsWith('1b')) {
+                return parseInt(lovelacePart.slice(2, 18), 16) / 1_000_000;
+            } else if (lovelacePart.startsWith('1a')) {
+                return parseInt(lovelacePart.slice(2, 10), 16) / 1_000_000;
+            } else if (lovelacePart.startsWith('19')) {
+                return parseInt(lovelacePart.slice(2, 6), 16) / 1_000_000;
+            } else if (lovelacePart.startsWith('18')) {
+                return parseInt(lovelacePart.slice(2, 4), 16) / 1_000_000;
+            }
+            return parseInt(lovelacePart.slice(0, 2), 16) / 1_000_000;
+        }
+        // Petit entier direct (0-23)
+        return parseInt(balanceCbor.slice(0, 2), 16) / 1_000_000;
+    } catch {
+        console.warn('Could not parse balance CBOR:', balanceCbor);
+        return 0;
+    }
 }
+
 
 export function useWallet() {
     const [state, setState] = useState<WalletState>({
@@ -96,53 +132,24 @@ export function useWallet() {
         const checkWallets = () => {
             const cardano = getCardano();
             const isMobile = isMobileDevice();
-            const inAppBrowser = isInAppBrowser();
-            
-            // Desktop wallets
+            const inEternlBrowser = isInEternlBrowser();
             const eternlWallet = getEternlWallet();
-            const yoroiWallet = getYoroiWallet();
-            
-            const desktopWallets: WalletInfo[] = [
-                {
+
+            let wallets: WalletInfo[] = [];
+
+            // Si on est dans le navigateur in-app d'Eternl
+            if (inEternlBrowser && eternlWallet) {
+                wallets = [{
                     id: 'eternl',
                     name: 'Eternl',
                     icon: '🔷',
-                    installed: !!eternlWallet,
+                    installed: true,
                     isMobile: false,
-                },
-                {
-                    id: 'yoroi',
-                    name: 'Yoroi',
-                    icon: '🦋',
-                    installed: !!yoroiWallet,
-                    isMobile: false,
-                },
-                {
-                    id: 'lace',
-                    name: 'Lace',
-                    icon: '💎',
-                    installed: !!cardano?.lace,
-                    isMobile: false,
-                },
-                {
-                    id: 'nami',
-                    name: 'Nami',
-                    icon: '🦊',
-                    installed: !!cardano?.nami,
-                    isMobile: false,
-                },
-                {
-                    id: 'flint',
-                    name: 'Flint',
-                    icon: '🔥',
-                    installed: !!cardano?.flint,
-                    isMobile: false,
-                },
-            ];
-
-            // Mobile wallets with deep links
-            const mobileWallets: WalletInfo[] = [
-                {
+                }];
+            }
+            // Sur mobile (hors navigateur in-app)
+            else if (isMobile) {
+                wallets = [{
                     id: 'eternl-mobile',
                     name: 'Eternl',
                     icon: '📱',
@@ -151,73 +158,46 @@ export function useWallet() {
                     deepLink: 'eternl://',
                     appStoreUrl: 'https://apps.apple.com/app/eternl/id1603854498',
                     playStoreUrl: 'https://play.google.com/store/apps/details?id=io.eternl.app',
-                },
-                {
-                    id: 'yoroi-mobile',
-                    name: 'Yoroi',
-                    icon: '🦋',
-                    installed: true,
-                    isMobile: true,
-                    deepLink: 'yoroi://',
-                    appStoreUrl: 'https://apps.apple.com/app/emurgos-yoroi-cardano-wallet/id1447326389',
-                    playStoreUrl: 'https://play.google.com/store/apps/details?id=com.emurgo',
-                },
-                {
-                    id: 'vespr',
-                    name: 'VESPR',
-                    icon: '🌟',
-                    installed: true,
-                    isMobile: true,
-                    deepLink: 'vespr://',
-                    appStoreUrl: 'https://apps.apple.com/app/vespr-wallet/id1565749376',
-                    playStoreUrl: 'https://play.google.com/store/apps/details?id=art.nft_craze.gallery.main',
-                },
-            ];
-
-            let wallets: WalletInfo[];
-
-            // If in wallet's in-app browser, check for injected wallet
-            if (inAppBrowser && cardano) {
-                wallets = desktopWallets.filter(w => w.installed);
-                if (wallets.length === 0) {
-                    // Fallback: try to detect any cardano wallet
-                    const walletKeys = Object.keys(cardano).filter(k => 
-                        typeof cardano[k]?.enable === 'function'
-                    );
-                    if (walletKeys.length > 0) {
-                        wallets = [{
-                            id: walletKeys[0] as WalletType,
-                            name: walletKeys[0].charAt(0).toUpperCase() + walletKeys[0].slice(1),
-                            icon: '💳',
-                            installed: true,
-                            isMobile: false,
-                        }];
-                    }
-                }
-            } else if (isMobile) {
-                // On mobile browser, show mobile wallet options
-                wallets = mobileWallets;
-            } else {
-                // Desktop: show desktop wallets
-                wallets = desktopWallets;
+                }];
+            }
+            // Desktop
+            else {
+                wallets = [
+                    {
+                        id: 'eternl',
+                        name: 'Eternl',
+                        icon: '🔷',
+                        installed: !!eternlWallet,
+                        isMobile: false,
+                    },
+                    {
+                        id: 'lace',
+                        name: 'Lace',
+                        icon: '💎',
+                        installed: !!cardano?.lace,
+                        isMobile: false,
+                    },
+                ];
             }
 
             setAvailableWallets(wallets);
             setWalletChecked(true);
         };
 
-        // Check immediately and after a delay (wallets inject async)
+        // Check immediately and after delays (wallets inject async)
         checkWallets();
-        const timeout = setTimeout(checkWallets, 1000);
-        // Also check after longer delay for slow wallet injections
-        const timeout2 = setTimeout(checkWallets, 2500);
+        const t1 = setTimeout(checkWallets, 500);
+        const t2 = setTimeout(checkWallets, 1500);
+        const t3 = setTimeout(checkWallets, 3000);
+        
         return () => {
-            clearTimeout(timeout);
-            clearTimeout(timeout2);
+            clearTimeout(t1);
+            clearTimeout(t2);
+            clearTimeout(t3);
         };
     }, []);
 
-    // Connect to specific wallet
+    // Connect to wallet
     const connect = useCallback(async (walletType?: WalletType) => {
         const cardano = getCardano();
         const isMobile = isMobileDevice();
@@ -228,145 +208,60 @@ export function useWallet() {
             let walletApi: WalletApi;
             let selectedWallet: WalletType = walletType || null;
 
-            // If no wallet type specified, try to auto-detect
+            // Auto-detect wallet if not specified
             if (!selectedWallet) {
                 const eternlWallet = getEternlWallet();
-                const yoroiWallet = getYoroiWallet();
                 if (eternlWallet) selectedWallet = 'eternl';
-                else if (yoroiWallet) selectedWallet = 'yoroi';
                 else if (cardano?.lace) selectedWallet = 'lace';
-                else if (cardano?.nami) selectedWallet = 'nami';
                 else if (isMobile) selectedWallet = 'eternl-mobile';
             }
 
-            // Handle Eternl Mobile via deep link
+            // Handle Eternl Mobile - open in Eternl's dApp browser
             if (selectedWallet === 'eternl-mobile') {
-                const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
-                
-                // Eternl mobile deep link format: ouvre le dApp browser avec l'URL
-                // Format: eternl://wc?uri=<url> ou eternl://browser?url=<url>
-                const isIOSDevice = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-                
-                // Essayer plusieurs formats de deep link
-                let deepLink: string;
-                
-                if (isIOSDevice) {
-                    // iOS: utiliser le universal link d'Eternl
-                    deepLink = `https://eternl.io/app/browser?url=${encodeURIComponent(currentUrl)}`;
-                } else {
-                    // Android: utiliser le deep link direct
-                    deepLink = `eternl://browser?url=${encodeURIComponent(currentUrl)}`;
-                }
-                
-                // Ouvrir le deep link
-                window.location.href = deepLink;
-                
-                // Fallback: si l'app ne s'ouvre pas après 2.5s, proposer d'installer
-                const timeout = setTimeout(() => {
-                    // Vérifier si on est toujours sur la même page (l'app ne s'est pas ouverte)
-                    setState(prev => ({
-                        ...prev,
-                        isLoading: false,
-                        error: null,
-                    }));
-                    
-                    // Proposer d'ouvrir le store
-                    const storeUrl = isIOSDevice 
-                        ? 'https://apps.apple.com/app/eternl/id1603854498'
-                        : 'https://play.google.com/store/apps/details?id=io.eternl.app';
-                    
-                    if (confirm('Eternl ne s\'est pas ouvert. Voulez-vous l\'installer ?')) {
-                        window.open(storeUrl, '_blank');
-                    }
-                }, 2500);
-                
-                // Nettoyer le timeout si la page change
-                window.addEventListener('blur', () => clearTimeout(timeout), { once: true });
-                
-                return false;
+                return handleEternlMobile();
             }
 
             // Desktop wallet connection
             switch (selectedWallet) {
                 case 'eternl': {
                     const eternlWallet = getEternlWallet();
-                    if (!eternlWallet) throw new Error('Eternl wallet not installed');
+                    if (!eternlWallet) {
+                        throw new Error('Eternl non installé. Installez l\'extension depuis eternl.io');
+                    }
                     walletApi = await eternlWallet.enable();
                     break;
                 }
-                case 'yoroi': {
-                    const yoroiWallet = getYoroiWallet();
-                    if (!yoroiWallet) throw new Error('Yoroi wallet not installed');
-                    walletApi = await yoroiWallet.enable();
-                    break;
-                }
-                case 'lace':
-                    if (!cardano?.lace) throw new Error('Lace wallet not installed');
+                case 'lace': {
+                    if (!cardano?.lace) {
+                        throw new Error('Lace non installé. Installez l\'extension depuis lace.io');
+                    }
                     walletApi = await cardano.lace.enable();
                     break;
-                case 'nami':
-                    if (!cardano?.nami) throw new Error('Nami wallet not installed');
-                    walletApi = await cardano.nami.enable();
-                    break;
-                case 'flint':
-                    if (!cardano?.flint) throw new Error('Flint wallet not installed');
-                    walletApi = await cardano.flint.enable();
-                    break;
+                }
                 default:
-                    throw new Error('No compatible wallet found. Please install Eternl, Lace, Yoroi or Nami.');
+                    throw new Error('Veuillez installer Eternl ou Lace.');
             }
 
-            // Get address - try getUsedAddresses first, fallback to getUnusedAddresses
+            // Get address
             let addresses = await walletApi.getUsedAddresses();
             if (!addresses || addresses.length === 0) {
-                // Fallback pour les wallets qui n'ont pas encore d'adresses utilisées
-                const getUnused = (walletApi as any).getUnusedAddresses;
-                if (typeof getUnused === 'function') {
-                    addresses = await getUnused.call(walletApi);
+                if (walletApi.getUnusedAddresses) {
+                    addresses = await walletApi.getUnusedAddresses();
                 }
             }
             const address = addresses?.[0] || null;
 
+            if (!address) {
+                throw new Error('Aucune adresse trouvée dans le wallet');
+            }
+
+            // Get network
             const networkId = await walletApi.getNetworkId();
             const network = networkId === 0 ? 'preprod' : networkId === 1 ? 'mainnet' : 'preview';
 
-            // Parse balance - CIP-30 retourne du CBOR, on extrait les lovelaces
+            // Get balance
             const balanceCbor = await walletApi.getBalance();
-            let balance = 0;
-            try {
-                // Le balance CBOR peut être un simple entier ou un tuple [lovelace, assets]
-                // Pour simplifier, on essaie de parser le hex comme un entier CBOR
-                // Format CBOR: 1b + 8 bytes pour grand entier, ou valeur directe pour petit
-                if (balanceCbor.startsWith('1b')) {
-                    // Grand entier (8 bytes)
-                    balance = parseInt(balanceCbor.slice(2, 18), 16) / 1_000_000;
-                } else if (balanceCbor.startsWith('1a')) {
-                    // Entier 4 bytes
-                    balance = parseInt(balanceCbor.slice(2, 10), 16) / 1_000_000;
-                } else if (balanceCbor.startsWith('19')) {
-                    // Entier 2 bytes
-                    balance = parseInt(balanceCbor.slice(2, 6), 16) / 1_000_000;
-                } else if (balanceCbor.startsWith('18')) {
-                    // Entier 1 byte
-                    balance = parseInt(balanceCbor.slice(2, 4), 16) / 1_000_000;
-                } else if (balanceCbor.startsWith('82')) {
-                    // Tuple [lovelace, assets] - extraire le premier élément
-                    const lovelacePart = balanceCbor.slice(2);
-                    if (lovelacePart.startsWith('1b')) {
-                        balance = parseInt(lovelacePart.slice(2, 18), 16) / 1_000_000;
-                    } else if (lovelacePart.startsWith('1a')) {
-                        balance = parseInt(lovelacePart.slice(2, 10), 16) / 1_000_000;
-                    } else {
-                        balance = parseInt(lovelacePart.slice(0, 2), 16) / 1_000_000;
-                    }
-                } else {
-                    // Petit entier direct (0-23)
-                    balance = parseInt(balanceCbor.slice(0, 2), 16) / 1_000_000;
-                }
-            } catch (e) {
-                console.warn('Could not parse balance CBOR:', balanceCbor);
-                balance = 0;
-            }
+            const balance = parseCborBalance(balanceCbor);
 
             setState({
                 connected: true,
@@ -382,15 +277,77 @@ export function useWallet() {
             localStorage.setItem('walletConnected', 'true');
             localStorage.setItem('walletType', selectedWallet || '');
             return true;
+
         } catch (error: any) {
             console.error('Wallet connection error:', error);
             setState(prev => ({
                 ...prev,
                 isLoading: false,
-                error: error.message || 'Failed to connect wallet',
+                error: error.message || 'Échec de connexion au wallet',
             }));
             return false;
         }
+    }, []);
+
+
+    // Handle Eternl Mobile connection via deep link
+    const handleEternlMobile = useCallback(() => {
+        const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+        const iOS = isIOSDevice();
+        
+        // Eternl dApp browser deep link
+        // iOS: Universal link qui ouvre l'app ou redirige vers le store
+        // Android: Deep link direct
+        let deepLink: string;
+        
+        if (iOS) {
+            // iOS Universal Link - ouvre le dApp browser d'Eternl
+            deepLink = `https://eternl.io/app?dappUrl=${encodeURIComponent(currentUrl)}`;
+        } else {
+            // Android Intent - ouvre directement dans Eternl
+            deepLink = `intent://browser?url=${encodeURIComponent(currentUrl)}#Intent;scheme=eternl;package=io.eternl.app;end`;
+        }
+        
+        // Sauvegarder l'état pour la reconnexion après retour
+        sessionStorage.setItem('eternl_mobile_pending', 'true');
+        
+        // Ouvrir le deep link
+        window.location.href = deepLink;
+        
+        // Timeout pour détecter si l'app n'est pas installée
+        const startTime = Date.now();
+        const checkInterval = setInterval(() => {
+            // Si plus de 3 secondes et toujours sur la page, l'app n'est probablement pas installée
+            if (Date.now() - startTime > 3000) {
+                clearInterval(checkInterval);
+                
+                setState(prev => ({
+                    ...prev,
+                    isLoading: false,
+                    error: null,
+                }));
+                
+                // Proposer d'installer l'app
+                const storeUrl = iOS
+                    ? 'https://apps.apple.com/app/eternl/id1603854498'
+                    : 'https://play.google.com/store/apps/details?id=io.eternl.app';
+                
+                if (confirm('Eternl n\'est pas installé. Voulez-vous l\'installer ?')) {
+                    window.open(storeUrl, '_blank');
+                }
+            }
+        }, 500);
+        
+        // Nettoyer si la page perd le focus (l'app s'est ouverte)
+        const cleanup = () => {
+            clearInterval(checkInterval);
+            setState(prev => ({ ...prev, isLoading: false }));
+        };
+        
+        window.addEventListener('blur', cleanup, { once: true });
+        window.addEventListener('pagehide', cleanup, { once: true });
+        
+        return false;
     }, []);
 
     // Disconnect wallet
@@ -407,36 +364,44 @@ export function useWallet() {
         });
         localStorage.removeItem('walletConnected');
         localStorage.removeItem('walletType');
+        sessionStorage.removeItem('eternl_mobile_pending');
     }, []);
 
-    // Auto-reconnect
+    // Auto-reconnect on mount
     useEffect(() => {
         if (!walletChecked) return;
         
         const wasConnected = localStorage.getItem('walletConnected');
         const savedWalletType = localStorage.getItem('walletType') as WalletType;
         
+        // Ne pas auto-reconnecter pour mobile (nécessite interaction utilisateur)
         if (wasConnected && savedWalletType && savedWalletType !== 'eternl-mobile') {
             const wallet = availableWallets.find(w => w.id === savedWalletType);
             if (wallet?.installed) {
                 connect(savedWalletType);
             }
         }
+        
+        // Vérifier si on revient du navigateur Eternl mobile
+        const pendingMobile = sessionStorage.getItem('eternl_mobile_pending');
+        if (pendingMobile && isInEternlBrowser()) {
+            sessionStorage.removeItem('eternl_mobile_pending');
+            connect('eternl');
+        }
     }, [walletChecked, availableWallets, connect]);
 
-    // Legacy compatibility
-    const isLaceInstalled = availableWallets.some(w => w.id === 'lace' && w.installed);
-    const isNamiInstalled = availableWallets.some(w => w.id === 'nami' && w.installed);
+    // Computed values
     const isEternlInstalled = availableWallets.some(w => w.id === 'eternl' && w.installed);
+    const isLaceInstalled = availableWallets.some(w => w.id === 'lace' && w.installed);
 
     return {
         ...state,
         connect,
         disconnect,
         availableWallets,
-        isLaceInstalled,
-        isNamiInstalled,
         isEternlInstalled,
+        isLaceInstalled,
         isMobile: isMobileDevice(),
+        isInEternlBrowser: isInEternlBrowser(),
     };
 }

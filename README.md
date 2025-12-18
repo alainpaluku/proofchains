@@ -58,7 +58,7 @@ npm run admin:dev
 | Frontend | Next.js 13, React 18, Tailwind CSS |
 | Language | TypeScript 5.3 |
 | Blockchain | Cardano, Lucid, Blockfrost API |
-| Wallets | Eternl, Yoroi, Lace, Nami, Flint, VESPR |
+| Wallets | Eternl, Lace |
 | Storage | IPFS via Pinata |
 | Database | Supabase (PostgreSQL) |
 | Auth | Supabase Auth |
@@ -71,14 +71,11 @@ npm run admin:dev
 
 | Wallet | Type | Statut |
 |--------|------|--------|
-| Eternl | Extension | ✅ Supporté |
-| Eternl Mobile | iOS/Android | ✅ Supporté |
-| Yoroi | Extension | ✅ Supporté |
-| Yoroi Mobile | iOS/Android | ✅ Supporté |
-| Lace | Extension | ✅ Supporté |
-| Nami | Extension | ✅ Supporté |
-| Flint | Extension | ✅ Supporté |
-| VESPR | Mobile | ✅ Supporté |
+| Eternl | Extension Desktop | ✅ Supporté |
+| Eternl | Mobile (iOS/Android) | ✅ Supporté |
+| Lace | Extension Desktop | ✅ Supporté |
+
+Sur mobile, l'app redirige vers le navigateur dApp intégré d'Eternl.
 
 Voir l'implémentation : [packages/ui/src/hooks/useWallet.ts](./packages/ui/src/hooks/useWallet.ts)
 
