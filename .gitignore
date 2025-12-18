@@ -12,7 +12,7 @@ dist/
 # Testing
 coverage/
 
-# Environment (keep .env.example, ignore actual .env)
+# Environment
 .env
 .env.local
 .env.*.local
@@ -53,8 +53,3 @@ pnpm-debug.log*
 # Misc
 *.pem
 *.log
-
-.vercel
-.env*.local
-
-.vercel
