@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Users, Search, Plus, Trash2, Mail, Award, X, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Users, Search, Plus, Trash2, Mail, Award, X, Loader2, RefreshCw } from 'lucide-react';
 import { LoadingSpinner } from '@proofchain/ui';
 import { studentService, issuerService } from '@proofchain/shared';
 import type { Student } from '@proofchain/shared';
@@ -14,14 +14,14 @@ export default function StudentsPage() {
     const [institutionId, setInstitutionId] = useState<string | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [formError, setFormError] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         fullName: '', email: '', phone: '', studentNumber: '', program: '', fieldOfStudy: '',
     });
 
-    useEffect(() => { loadData(); }, []);
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setLoading(true);
+        setError(null);
         try {
             const instResult = await issuerService.getMyInstitution();
             if (instResult.success && instResult.data) {
@@ -33,36 +33,79 @@ export default function StudentsPage() {
             } else {
                 setError('Veuillez d\'abord créer votre institution.');
             }
-        } catch { setError('Erreur lors du chargement.'); }
+        } catch { 
+            setError('Erreur lors du chargement.'); 
+        }
         setLoading(false);
-    };
+    }, []);
+
+    useEffect(() => { loadData(); }, [loadData]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+        setFormError(null);
+    };
+
+    const resetForm = () => {
+        setFormData({ fullName: '', email: '', phone: '', studentNumber: '', program: '', fieldOfStudy: '' });
+        setFormError(null);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!institutionId) return;
+        
+        // Validation
+        if (!formData.fullName.trim()) {
+            setFormError('Le nom complet est requis');
+            return;
+        }
+        if (!formData.studentNumber.trim()) {
+            setFormError('Le matricule est requis');
+            return;
+        }
+        
         setSaving(true);
-        const result = await studentService.create(institutionId, {
-            fullName: formData.fullName, email: formData.email || undefined,
-            phone: formData.phone || undefined, studentNumber: formData.studentNumber,
-            program: formData.program || undefined, fieldOfStudy: formData.fieldOfStudy || undefined,
-        });
-        if (result.success && result.data) {
-            setStudents([result.data, ...students]);
-            setShowModal(false);
-            setFormData({ fullName: '', email: '', phone: '', studentNumber: '', program: '', fieldOfStudy: '' });
-        } else { alert(result.error || 'Erreur lors de l\'ajout'); }
+        setFormError(null);
+        
+        try {
+            const result = await studentService.create(institutionId, {
+                fullName: formData.fullName.trim(), 
+                email: formData.email.trim() || undefined,
+                phone: formData.phone.trim() || undefined, 
+                studentNumber: formData.studentNumber.trim(),
+                program: formData.program.trim() || undefined, 
+                fieldOfStudy: formData.fieldOfStudy.trim() || undefined,
+            });
+            
+            if (result.success && result.data) {
+                // Ajouter le nouvel étudiant en haut de la liste
+                setStudents(prev => [result.data!, ...prev]);
+                setShowModal(false);
+                resetForm();
+            } else { 
+                setFormError(result.error || 'Erreur lors de l\'ajout de l\'étudiant'); 
+            }
+        } catch (err: any) {
+            setFormError(err.message || 'Une erreur est survenue');
+        }
         setSaving(false);
     };
 
     const handleDelete = async (studentId: string) => {
-        if (!confirm('Supprimer cet étudiant ?')) return;
+        if (!confirm('Êtes-vous sûr de vouloir supprimer cet étudiant ?')) return;
+        
         const result = await studentService.delete(studentId);
-        if (result.success) { setStudents(students.filter(s => s.id !== studentId)); }
-        else { alert(result.error || 'Erreur lors de la suppression'); }
+        if (result.success) { 
+            setStudents(prev => prev.filter(s => s.id !== studentId)); 
+        } else { 
+            alert(result.error || 'Erreur lors de la suppression'); 
+        }
+    };
+
+    const handleCloseModal = () => {
+        setShowModal(false);
+        resetForm();
     };
 
     const filteredStudents = students.filter(student =>
@@ -109,10 +152,19 @@ export default function StudentsPage() {
                         {students.length} étudiant{students.length > 1 ? 's' : ''}
                     </p>
                 </div>
-                <button onClick={() => setShowModal(true)} className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl font-medium transition-all shadow-lg w-full sm:w-auto">
-                    <Plus className="w-5 h-5" />
-                    <span className="sm:inline">Ajouter</span>
-                </button>
+                <div className="flex gap-2">
+                    <button 
+                        onClick={() => loadData()} 
+                        disabled={loading}
+                        className="flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+                    >
+                        <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                    </button>
+                    <button onClick={() => setShowModal(true)} className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl font-medium transition-all shadow-lg">
+                        <Plus className="w-5 h-5" />
+                        <span className="sm:inline">Ajouter</span>
+                    </button>
+                </div>
             </div>
 
             {error && (
@@ -181,9 +233,14 @@ export default function StudentsPage() {
                     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Ajouter un étudiant</h2>
-                            <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"><X className="w-5 h-5" /></button>
+                            <button onClick={handleCloseModal} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"><X className="w-5 h-5" /></button>
                         </div>
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                            {formError && (
+                                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400 text-sm">
+                                    {formError}
+                                </div>
+                            )}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nom complet *</label>
                                 <input type="text" name="fullName" value={formData.fullName} onChange={handleInputChange} required placeholder="Jean Dupont" className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-600" />
@@ -201,7 +258,7 @@ export default function StudentsPage() {
                                 <input type="text" name="program" value={formData.program} onChange={handleInputChange} placeholder="Licence Informatique" className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-600" />
                             </div>
                             <div className="flex gap-3 pt-4">
-                                <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700">Annuler</button>
+                                <button type="button" onClick={handleCloseModal} className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700">Annuler</button>
                                 <button type="submit" disabled={saving} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-xl font-medium">
                                     {saving ? (<><Loader2 className="w-5 h-5 animate-spin" />Ajout...</>) : (<><Plus className="w-5 h-5" />Ajouter</>)}
                                 </button>

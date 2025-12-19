@@ -86,7 +86,7 @@ export default function HomePage() {
         }
     ];
 
-    const landingUrl = process.env.NEXT_PUBLIC_LANDING_URL || 'https://proofchain-landing.vercel.app';
+    const landingUrl = process.env.NEXT_PUBLIC_LANDING_URL || 'https://proofchains.org';
     const explorerUrl = process.env.NEXT_PUBLIC_CARDANO_EXPLORER || 'https://preprod.cardanoscan.io';
 
     return (

@@ -14,9 +14,9 @@
 
 | App | Port | URL | Code |
 |-----|------|-----|------|
-| 🏠 Landing (+ Verifier) | 3003 | [proofchain-landing.vercel.app](https://proofchain-landing.vercel.app/) | [apps/landing](./apps/landing) |
-| 🎓 Issuer | 3001 | [proofchain-issuer.vercel.app](https://proofchain-issuer.vercel.app) | [apps/issuer](./apps/issuer) |
-| ⚙️ Admin | 3002 | [proofchain-admin.vercel.app](https://proofchain-admin.vercel.app) | [apps/admin](./apps/admin) |
+| 🏠 Landing (+ Verifier) | 3003 | [proofchains.org](https://proofchains.org) | [apps/landing](./apps/landing) |
+| 🎓 Issuer | 3001 | [issuer.proofchains.org](https://issuer.proofchains.org) | [apps/issuer](./apps/issuer) |
+| ⚙️ Admin | 3002 | [admin.proofchains.org](https://admin.proofchains.org) | [apps/admin](./apps/admin) |
 
 ---
 
@@ -126,9 +126,9 @@ NEXT_PUBLIC_BLOCKFROST_NETWORK=preprod
 PINATA_JWT=eyJxxx...
 
 # === URLs des apps ===
-NEXT_PUBLIC_LANDING_URL=https://proofchain-landing.vercel.app
-NEXT_PUBLIC_ISSUER_URL=https://proofchain-issuer.vercel.app
-NEXT_PUBLIC_ADMIN_URL=https://proofchain-admin.vercel.app
+NEXT_PUBLIC_LANDING_URL=https://proofchains.org
+NEXT_PUBLIC_ISSUER_URL=https://issuer.proofchains.org
+NEXT_PUBLIC_ADMIN_URL=https://admin.proofchains.org
 ```
 
 > ⚠️ Ne jamais commiter les fichiers `.env`

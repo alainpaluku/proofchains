@@ -38,7 +38,7 @@ export async function signUp(email: string, password: string, name?: string): Pr
     // Determine redirect URL based on environment
     const redirectUrl = typeof window !== 'undefined' 
         ? window.location.origin 
-        : process.env.NEXT_PUBLIC_ISSUER_URL || 'https://proofchain-issuer.vercel.app';
+        : process.env.NEXT_PUBLIC_ISSUER_URL || 'https://issuer.proofchains.org';
 
     const supabase = getSupabaseClient();
     const { error } = await supabase.auth.signUp({

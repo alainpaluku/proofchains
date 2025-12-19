@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     Upload,
     Coins,
@@ -37,12 +37,17 @@ type IPFSResult = {
     error?: string;
 };
 
+// URL de base pour la vérification
+const LANDING_URL = process.env.NEXT_PUBLIC_LANDING_URL || 'https://proofchains.org';
+
 export default function MintPage() {
     const { walletApi, connected } = useWallet();
+    const dataLoadedRef = useRef(false);
 
     const [institutionId, setInstitutionId] = useState<string | null>(null);
     const [students, setStudents] = useState<Student[]>([]);
     const [loadingStudents, setLoadingStudents] = useState(true);
+    const [kycApproved, setKycApproved] = useState(false);
 
     const [formData, setFormData] = useState({
         studentId: '',
@@ -62,7 +67,7 @@ export default function MintPage() {
     const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
 
     const generateQRCode = useCallback(async (docId: string) => {
-        const verifyUrl = `${process.env.NEXT_PUBLIC_LANDING_URL || 'https://proofchain-landing.vercel.app'}/verify/${docId}`;
+        const verifyUrl = `${LANDING_URL}/verify/${docId}`;
         try {
             const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
                 width: 256,
@@ -81,35 +86,54 @@ export default function MintPage() {
         }
     }, [documentId, mintResult?.success, generateQRCode]);
 
-    useEffect(() => {
-        async function loadData() {
-            setLoadingStudents(true);
-            try {
-                const instResult = await issuerService.getMyInstitution();
-                if (instResult.success && instResult.data) {
-                    setInstitutionId(instResult.data.id);
-                    
-                    if (instResult.data.kyc_status !== 'approved') {
-                        setError('⚠️ Votre institution doit être validée (KYC approuvé) pour émettre des diplômes.');
-                        setLoadingStudents(false);
-                        return;
-                    }
-
-                    const studentsResult = await studentService.getByInstitution(instResult.data.id);
-                    if (studentsResult.success && studentsResult.data) {
-                        setStudents(studentsResult.data);
-                    }
-                } else {
-                    setError('⚠️ Vous devez d\'abord créer votre institution et compléter le KYC.');
+    // Charger les données de l'institution et des étudiants
+    const loadData = useCallback(async () => {
+        setLoadingStudents(true);
+        setError(null);
+        try {
+            const instResult = await issuerService.getMyInstitution();
+            if (instResult.success && instResult.data) {
+                setInstitutionId(instResult.data.id);
+                
+                if (instResult.data.kyc_status !== 'approved') {
+                    setKycApproved(false);
+                    setError('⚠️ Votre institution doit être validée (KYC approuvé) pour émettre des diplômes.');
+                    setLoadingStudents(false);
+                    return;
                 }
-            } catch (err) {
-                console.error('Erreur chargement données:', err);
-                setError('Erreur lors du chargement des données.');
+                
+                setKycApproved(true);
+
+                const studentsResult = await studentService.getByInstitution(instResult.data.id);
+                if (studentsResult.success && studentsResult.data) {
+                    setStudents(studentsResult.data);
+                }
+            } else {
+                setError('⚠️ Vous devez d\'abord créer votre institution et compléter le KYC.');
             }
-            setLoadingStudents(false);
+        } catch (err) {
+            console.error('Erreur chargement données:', err);
+            setError('Erreur lors du chargement des données.');
         }
-        loadData();
+        setLoadingStudents(false);
+        dataLoadedRef.current = true;
     }, []);
+
+    // Charger les données au montage
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
+
+    // Recharger les données quand le wallet se connecte (résout le problème de rafraîchissement)
+    useEffect(() => {
+        if (connected && dataLoadedRef.current) {
+            // Petit délai pour laisser le wallet s'initialiser complètement
+            const timer = setTimeout(() => {
+                loadData();
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [connected, loadData]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -198,7 +222,7 @@ export default function MintPage() {
             setIsUploading(false);
             setIsMinting(true);
 
-            const verifyUrl = `${process.env.NEXT_PUBLIC_LANDING_URL || 'https://proofchain-landing.vercel.app'}/verify/${document.document_id}`;
+            const verifyUrl = `${LANDING_URL}/verify/${document.document_id}`;
             
             const metadata = {
                 name: `PROOFCHAIN Diploma - ${document.document_id}`,
@@ -321,13 +345,13 @@ export default function MintPage() {
 
                             <div className="mt-4 flex flex-wrap gap-3">
                                 <a
-                                    href={`${process.env.NEXT_PUBLIC_LANDING_URL || 'https://proofchain-landing.vercel.app'}/verify/${documentId}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
-                                >
-                                    Vérifier le Document
-                                </a>
+                                href={`${LANDING_URL}/verify/${documentId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
+                            >
+                                Vérifier le Document
+                            </a>
                                 <button
                                     onClick={() => { setMintResult(null); setQrCodeUrl(null); }}
                                     className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm font-medium"
