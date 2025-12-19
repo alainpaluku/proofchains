@@ -414,6 +414,40 @@ export default function ProofchainsPage() {
             </section>
 
             {/* ================================================================ */}
+            {/* VIDEO PRESENTATION SECTION */}
+            {/* ================================================================ */}
+            <section className="py-24 bg-white dark:bg-gray-950">
+                <div className="container mx-auto px-4 lg:px-8">
+                    <div className="text-center mb-12">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full text-sm font-medium mb-6">
+                            <Play className="w-4 h-4" />
+                            Présentation
+                        </div>
+                        <h2 className="text-3xl lg:text-4xl font-bold mb-6">
+                            Découvrez Proofchains en vidéo
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
+                            Une présentation complète de notre solution de certification de diplômes sur la blockchain Cardano.
+                        </p>
+                    </div>
+
+                    <div className="max-w-4xl mx-auto">
+                        <div className="relative aspect-video rounded-2xl overflow-hidden shadow-2xl shadow-purple-500/20 border border-gray-200 dark:border-gray-800">
+                            <video 
+                                className="w-full h-full object-cover"
+                                controls
+                                poster=""
+                                preload="metadata"
+                            >
+                                <source src="https://za9oq2xeokse5plp.public.blob.vercel-storage.com/video1" type="video/mp4" />
+                                Votre navigateur ne supporte pas la lecture de vidéos.
+                            </video>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* ================================================================ */}
             {/* PROBLEM SECTION */}
             {/* ================================================================ */}
             <section className="py-24 bg-gray-50 dark:bg-gray-900">
