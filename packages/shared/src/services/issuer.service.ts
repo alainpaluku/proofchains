@@ -64,6 +64,10 @@ export const issuerService = {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return { success: false, error: 'Utilisateur non connecté' };
 
+            // AUTO-APPROVE KYC pour le mode test
+            // Les juristes peuvent créer un compte sans attendre la validation admin
+            const AUTO_APPROVE_KYC = true; // Mettre à false pour revenir au mode normal
+
             const institutionData = {
                 name: data.institutionName,
                 type: data.institutionType,
@@ -78,8 +82,9 @@ export const issuerService = {
                 accreditation_url: data.accreditationUrl || null,
                 tax_certificate_url: data.taxCertificateUrl || null,
                 ministerial_decree_url: data.ministerialDecreeUrl || null,
-                kyc_status: 'pending' as const,
+                kyc_status: AUTO_APPROVE_KYC ? 'approved' as const : 'pending' as const,
                 kyc_submitted_at: new Date().toISOString(),
+                ...(AUTO_APPROVE_KYC && { kyc_reviewed_at: new Date().toISOString() }),
             };
 
             // Check if institution exists
