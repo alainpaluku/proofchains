@@ -69,7 +69,7 @@ export const issuerService = {
             // true = auto-approbation (mode test uniquement)
             const AUTO_APPROVE_KYC = false;
 
-            const institutionData = {
+            const institutionData: Record<string, unknown> = {
                 name: data.institutionName,
                 type: data.institutionType,
                 country_code: data.countryCode,
@@ -83,10 +83,14 @@ export const issuerService = {
                 accreditation_url: data.accreditationUrl || null,
                 tax_certificate_url: data.taxCertificateUrl || null,
                 ministerial_decree_url: data.ministerialDecreeUrl || null,
-                kyc_status: AUTO_APPROVE_KYC ? 'approved' as const : 'pending' as const,
+                kyc_status: AUTO_APPROVE_KYC ? 'approved' : 'pending',
                 kyc_submitted_at: new Date().toISOString(),
-                ...(AUTO_APPROVE_KYC && { kyc_reviewed_at: new Date().toISOString() }),
             };
+
+            // Ajouter la date de review si auto-approuvé
+            if (AUTO_APPROVE_KYC) {
+                institutionData.kyc_reviewed_at = new Date().toISOString();
+            }
 
             // Check if institution exists
             const { data: existing } = await supabase
