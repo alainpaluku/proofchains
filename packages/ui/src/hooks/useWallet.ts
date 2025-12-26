@@ -69,8 +69,16 @@ function isInEternlBrowser(): boolean {
     if (typeof window === 'undefined') return false;
     const ua = navigator.userAgent.toLowerCase();
     const cardano = getCardano();
-    // Eternl injecte son wallet dans le navigateur in-app
-    return ua.includes('eternl') || (isMobileDevice() && cardano?.eternl && !cardano?.lace);
+    
+    // Méthodes de détection:
+    // 1. User agent contient 'eternl' ou 'ccvault'
+    // 2. Sur mobile avec wallet Eternl/ccvault injecté (sans Lace)
+    // 3. window.cardano.eternl ou window.cardano.ccvault existe sur mobile
+    const hasEternlUA = ua.includes('eternl') || ua.includes('ccvault');
+    const hasEternlWallet = !!(cardano?.eternl || cardano?.ccvault);
+    const isMobile = isMobileDevice();
+    
+    return hasEternlUA || (isMobile && hasEternlWallet);
 }
 
 // Check if in Lace's in-app browser (if they have one)
@@ -540,30 +548,36 @@ export function useWallet() {
     useEffect(() => {
         if (!walletChecked) return;
         
+        const inEternlBrowser = isInEternlBrowser();
+        const inLaceBrowser = isInLaceBrowser();
+        const eternlWallet = getEternlWallet();
+        const laceWallet = getLaceWallet();
+        
+        // PRIORITÉ 1: Si on est dans le navigateur in-app d'Eternl, connexion automatique
+        if (inEternlBrowser && eternlWallet) {
+            console.log('🔷 Détecté dans le navigateur Eternl - connexion automatique...');
+            sessionStorage.removeItem('eternl_mobile_pending');
+            setTimeout(() => connect('eternl'), 500);
+            return;
+        }
+        
+        // PRIORITÉ 2: Si on est dans le navigateur in-app de Lace, connexion automatique
+        if (inLaceBrowser && laceWallet) {
+            console.log('💎 Détecté dans le navigateur Lace - connexion automatique...');
+            sessionStorage.removeItem('lace_mobile_pending');
+            setTimeout(() => connect('lace'), 500);
+            return;
+        }
+        
+        // PRIORITÉ 3: Reconnexion desktop si précédemment connecté
         const wasConnected = localStorage.getItem('walletConnected');
         const savedWalletType = localStorage.getItem('walletType') as WalletType;
         
-        // Ne pas auto-reconnecter pour mobile (nécessite interaction utilisateur)
         if (wasConnected && savedWalletType && savedWalletType !== 'eternl-mobile' && savedWalletType !== 'lace-mobile') {
             const wallet = availableWallets.find(w => w.id === savedWalletType);
             if (wallet?.installed) {
-                // Petit délai pour laisser le wallet s'initialiser
                 setTimeout(() => connect(savedWalletType), 500);
             }
-        }
-        
-        // Vérifier si on revient du navigateur Eternl mobile
-        const pendingEternlMobile = sessionStorage.getItem('eternl_mobile_pending');
-        if (pendingEternlMobile && isInEternlBrowser()) {
-            sessionStorage.removeItem('eternl_mobile_pending');
-            setTimeout(() => connect('eternl'), 300);
-        }
-        
-        // Vérifier si on revient du navigateur Lace mobile
-        const pendingLaceMobile = sessionStorage.getItem('lace_mobile_pending');
-        if (pendingLaceMobile && isInLaceBrowser()) {
-            sessionStorage.removeItem('lace_mobile_pending');
-            setTimeout(() => connect('lace'), 300);
         }
     }, [walletChecked, availableWallets, connect]);
 
