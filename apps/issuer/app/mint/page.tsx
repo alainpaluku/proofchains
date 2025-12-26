@@ -47,7 +47,6 @@ export default function MintPage() {
     const [institutionId, setInstitutionId] = useState<string | null>(null);
     const [students, setStudents] = useState<Student[]>([]);
     const [loadingStudents, setLoadingStudents] = useState(true);
-    const [kycApproved, setKycApproved] = useState(false);
 
     const [formData, setFormData] = useState({
         studentId: '',
@@ -96,13 +95,10 @@ export default function MintPage() {
                 setInstitutionId(instResult.data.id);
                 
                 if (instResult.data.kyc_status !== 'approved') {
-                    setKycApproved(false);
                     setError('⚠️ Votre institution doit être validée (KYC approuvé) pour émettre des diplômes.');
                     setLoadingStudents(false);
                     return;
                 }
-                
-                setKycApproved(true);
 
                 const studentsResult = await studentService.getByInstitution(instResult.data.id);
                 if (studentsResult.success && studentsResult.data) {

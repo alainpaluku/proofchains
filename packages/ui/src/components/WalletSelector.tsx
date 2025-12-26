@@ -16,6 +16,7 @@ const WalletLinks: Record<string, string> = {
     lace: 'https://www.lace.io/',
     nami: 'https://namiwallet.io/',
     'eternl-mobile': 'https://eternl.io/app',
+    'lace-mobile': 'https://www.lace.io/',
 };
 
 export function WalletSelector({ isOpen, onClose, onConnect }: WalletSelectorProps) {
@@ -147,8 +148,8 @@ export function WalletSelector({ isOpen, onClose, onConnect }: WalletSelectorPro
                             ))}
                             <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
                                 <p className="text-sm text-blue-700 dark:text-blue-300">
-                                    <strong>Eternl Mobile</strong> vous permet de connecter votre portefeuille 
-                                    depuis votre téléphone. L'application s'ouvrira automatiquement.
+                                    <strong>Eternl</strong> et <strong>Lace</strong> vous permettent de connecter votre portefeuille 
+                                    depuis votre téléphone. L'application s'ouvrira automatiquement avec cette page.
                                 </p>
                             </div>
                         </>

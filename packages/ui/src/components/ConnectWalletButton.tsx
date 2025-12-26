@@ -17,6 +17,7 @@ const walletNames: Record<string, string> = {
     eternl: 'Eternl',
     'eternl-mobile': 'Eternl',
     lace: 'Lace',
+    'lace-mobile': 'Lace',
     nami: 'Nami',
 };
 
