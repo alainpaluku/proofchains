@@ -210,9 +210,9 @@ export function useWallet() {
                         icon: '📱',
                         installed: true,
                         isMobile: true,
-                        deepLink: 'eternl://',
+                        deepLink: 'ccvault://',
                         appStoreUrl: 'https://apps.apple.com/app/eternl/id1603854498',
-                        playStoreUrl: 'https://play.google.com/store/apps/details?id=io.eternl.app',
+                        playStoreUrl: 'https://play.google.com/store/apps/details?id=io.ccvault.v1.main',
                     },
                     {
                         id: 'lace-mobile',
@@ -437,10 +437,9 @@ export function useWallet() {
                 deepLink = `https://eternl.io/app?dappUrl=${encodeURIComponent(currentUrl)}`;
                 storeUrl = 'https://apps.apple.com/app/eternl/id1603854498';
             } else if (android) {
-                // Android: Deep link avec fallback vers le store
-                // Format plus compatible que intent://
-                deepLink = `eternl://dapp?url=${encodeURIComponent(currentUrl)}`;
-                storeUrl = 'https://play.google.com/store/apps/details?id=io.eternl.app';
+                // Android: Deep link ccvault (ancien nom du package)
+                deepLink = `ccvault://dapp?url=${encodeURIComponent(currentUrl)}`;
+                storeUrl = 'https://play.google.com/store/apps/details?id=io.ccvault.v1.main';
             } else {
                 deepLink = `https://eternl.io/app?dappUrl=${encodeURIComponent(currentUrl)}`;
                 storeUrl = 'https://eternl.io/';
