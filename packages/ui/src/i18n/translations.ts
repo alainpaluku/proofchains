@@ -368,6 +368,7 @@ export const translations = {
     settings_saveSuccess: { fr: 'Paramètres sauvegardés avec succès', en: 'Settings saved successfully' },
     registrationNumber: { fr: 'N° Enregistrement', en: 'Reg. Number' },
     submittedOn: { fr: 'Soumis le', en: 'Submitted on' },
+    country: { fr: 'Pays', en: 'Country' },
     type: { fr: 'Type', en: 'Type' },
     // Notifications page
     notificationsTitle: { fr: 'Notifications Admin', en: 'Admin Notifications' },
@@ -419,7 +420,6 @@ export const translations = {
     comingSoon: { fr: 'À venir', en: 'Coming soon' },
     stats_diplomasPerMonth: { fr: 'Diplômes émis par mois', en: 'Diplomas issued per month' },
     newInstitutions: { fr: 'Nouvelles institutions', en: 'New institutions' },
-    chartComingSoon: { fr: 'Graphique à venir', en: 'Chart coming soon' },
     revenueByPlan: { fr: 'Revenus par plan d\'abonnement', en: 'Revenue by subscription plan' },
     activeSubscriptions: { fr: 'abonnements actifs', en: 'active subscriptions' },
     kycStatus: { fr: 'Statut KYC des institutions', en: 'Institutions KYC status' },
@@ -450,7 +450,6 @@ export const translations = {
     save: { fr: 'Enregistrer', en: 'Save' },
     cancel: { fr: 'Annuler', en: 'Cancel' },
     subscriptionStats: { fr: 'Statistiques des abonnements', en: 'Subscription statistics' },
-    monthlyRevenue: { fr: 'Revenus mensuels', en: 'Monthly revenue' },
     activeSubscriptionsCount: { fr: 'Abonnements actifs', en: 'Active subscriptions' },
     conversionRate: { fr: 'Taux de conversion', en: 'Conversion rate' },
   },
