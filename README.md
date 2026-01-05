@@ -1,4 +1,4 @@
-# 🔐 PROOFCHAIN
+# 🔐 PROOFCHAINS
 
 **Plateforme de certification académique sur blockchain Cardano**
 
