@@ -358,6 +358,7 @@ export const translations = {
     whatValue: { fr: 'Quelle est la valeur ajoutée pour l\'utilisateur ?', en: 'What is the added value for the user?' },
     whatValueAnswer: { fr: 'Pour l\'étudiant : une garantie de sécurité et d\'accès à ses documents, même en cas de perte physique. Pour l\'employeur : la possibilité de vérifier rapidement et avec certitude l\'authenticité d\'un document.', en: 'For the student: a guarantee of security and access to their documents, even in case of physical loss. For the employer: the ability to quickly and certainly verify the authenticity of a document.' },
     localImpact: { fr: 'Quel est l\'impact local de votre solution ?', en: 'What is the local impact of your solution?' },
+    localImpactAnswer: { fr: 'En RD Congo, Proofchains permet aux étudiants de conserver leurs diplômes même en cas de destruction des archives scolaires. Notre solution garantit l\'accès permanent aux documents académiques et facilite leur vérification par les employeurs.', en: 'In DR Congo, Proofchains allows students to keep their diplomas even if school archives are destroyed. Our solution guarantees permanent access to academic documents and facilitates their verification by employers.' },
     // Video section (Demo)
     demo: { fr: 'Démonstration', en: 'Demo' },
     seeInAction: { fr: 'Voir l\'application en action', en: 'See the application in action' },
