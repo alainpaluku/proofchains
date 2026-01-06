@@ -595,6 +595,17 @@ export const translations = {
       en: 'Verification is free and accessible to everyone. Enter the diploma ID to verify its authenticity.' 
     },
 
+    // Documentation section
+    documentation: { fr: 'Documentation', en: 'Documentation' },
+    userGuide: { fr: 'Guide d\'utilisation', en: 'User Guide' },
+    userGuideTitle: { fr: 'Guide d\'utilisation Proofchains', en: 'Proofchains User Guide' },
+    userGuideDesc: { 
+      fr: 'Consultez notre guide complet pour apprendre à utiliser la plateforme Proofchains. Découvrez comment émettre, gérer et vérifier des diplômes sur la blockchain Cardano.', 
+      en: 'Consult our comprehensive guide to learn how to use the Proofchains platform. Discover how to issue, manage and verify diplomas on the Cardano blockchain.' 
+    },
+    readGuide: { fr: 'Lire le guide', en: 'Read Guide' },
+    downloadGuide: { fr: 'Télécharger le PDF', en: 'Download PDF' },
+
     // Footer
     submittedTo: { fr: 'Soumis à', en: 'Submitted to' },
     projectDesc: { fr: 'Projet open-source pour le Cardano Africa Summit.', en: 'Open-source project for the Cardano Africa Summit.' },

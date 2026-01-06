@@ -156,6 +156,23 @@ NEXT_PUBLIC_ADMIN_URL=https://admin.proofchains.org
 
 ---
 
+## 📚 Documentation
+
+Le guide d'utilisation complet de Proofchains est disponible en français :
+
+📄 **[Guide d'utilisation PDF](./apps/landing/public/docs/guide-utilisation.pdf)**
+
+Le guide est également accessible directement depuis la page d'accueil de l'application Landing dans la section "Documentation".
+
+**Contenu du guide :**
+- Introduction à Proofchains
+- Comment émettre des diplômes (pour les institutions)
+- Comment vérifier un diplôme
+- Gestion du compte et des paramètres
+- FAQ et résolution de problèmes
+
+---
+
 ## 🔒 Sécurité
 
 Voir [.gitignore](./.gitignore) - Fichiers exclus de Git :

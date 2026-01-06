@@ -12,6 +12,7 @@ import { HowItWorksSection } from '../components/sections/HowItWorksSection';
 import { TechStackSection } from '../components/sections/TechStackSection';
 import { IssuersSection } from '../components/sections/IssuersSection';
 import { FaqSection } from '../components/sections/FaqSection';
+import DocumentationSection from '../components/DocumentationSection';
 import { CtaSection } from '../components/sections/CtaSection';
 import { Footer } from '../components/Footer';
 
@@ -64,6 +65,7 @@ export default function ProofchainsPage() {
             <TechStackSection />
             <IssuersSection />
             <FaqSection />
+            <DocumentationSection />
             <CtaSection />
             
             <Footer />
